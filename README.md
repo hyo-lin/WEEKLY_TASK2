@@ -6,16 +6,33 @@
 - 메모리 저장소 (HashMap)
 
 ## 패키지 구조
+```
 com.example.community
 ├── global
-│   ├── exception (GeneralException, GlobalExceptionHandler)
-│   └── response (CommonResponse, ErrorResponse, StatusCode)
+│   ├── exception
+│   │   ├── GeneralException
+│   │   └── GlobalExceptionHandler
+│   └── response
+│       ├── CommonResponse
+│       ├── ErrorResponse
+│       └── StatusCode
 └── post
-├── controller
-├── service
-├── repository
-├── model
-└── dto
+    ├── controller
+    │   └── PostController
+    ├── service
+    │   └── PostService
+    ├── repository
+    │   ├── PostRepository
+    │   └── InMemoryPostRepository
+    ├── model
+    │   └── Post
+    └── dto
+        ├── request
+        │   ├── PostCreateRequest
+        │   └── PostUpdateRequest
+        └── response
+            └── PostResponse
+```
 
 ## 설계 고려사항
 
