@@ -23,32 +23,48 @@ public class PostController {
     // 게시글 등록
     @PostMapping
     public ResponseEntity<CommonResponse<PostResponse>> createPost(
+            @RequestAttribute("userId") Long userId,
             @RequestBody @Valid PostCreateRequest request
     ) {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.CREATE_POST_SUCCESS, postService.createPost(request)));
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.CREATE_POST_SUCCESS, postService.createPost(userId, request)));
     }
 
-    // 게시글 조회(댓글 제외)
+    // 게시글 목록 조회(댓글 제외)
     @GetMapping
-    public ResponseEntity<CommonResponse<List<PostResponse>>> getPosts() {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POSTS_SUCCESS, postService.getPosts()));
+    public ResponseEntity<CommonResponse<List<PostResponse>>> getPosts(
+            @RequestAttribute("userId") Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POSTS_SUCCESS, postService.getPosts(page, size)));
+    }
+
+    // 게시물 상세조회
+    @GetMapping("/{postId}")
+    public ResponseEntity<CommonResponse<PostResponse>> getPost(
+            @PathVariable Long postId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POST_SUCCESS, postService.getPost(postId)));
     }
 
     // 게시글 수정
     @PatchMapping("/{postId}")
     public ResponseEntity<CommonResponse<PostResponse>> updatePost(
             @PathVariable Long postId,
+            @RequestAttribute("userId") Long userId,
             @RequestBody @Valid PostUpdateRequest request
     ){
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.UPDATE_POST_SUCCESS, postService.updatePost(postId, request)));
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.UPDATE_POST_SUCCESS, postService.updatePost(postId, userId, request)));
     }
 
     // 게시글 제거
     @DeleteMapping("/{postId}")
     public ResponseEntity<CommonResponse<Void>> deletePost(
-            @PathVariable Long postId
+            @PathVariable Long postId,
+            @RequestAttribute("userId") Long userId
     ) {
-        postService.deletePost(postId);
+        postService.deletePost(userId, postId);
         return ResponseEntity.ok(CommonResponse.success(StatusCode.DELETE_POST_SUCCESS, null));
     }
 
