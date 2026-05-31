@@ -2,9 +2,7 @@ package com.example.community.user.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import org.springframework.data.annotation.CreatedDate;
 import jakarta.persistence.Id;
-import java.time.LocalDateTime;
 @Getter
 
 @Table(name = "user")
