@@ -77,4 +77,8 @@ public class JwtProvider {
     public long getAccessTokenExpSeconds() {
         return jwtProperties.getAccessTokenExpSeconds();
     }
+
+    public long getRefreshTokenExpSeconds() {
+        return jwtProperties.getRefreshTokenExpSeconds();
+    }
 }

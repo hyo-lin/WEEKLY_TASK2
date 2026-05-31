@@ -72,9 +72,12 @@ public class AuthController {
     // 액세스 토큰 재발급
     @PostMapping("/token/refresh")
     public ResponseEntity<CommonResponse<LoginResponse>> refresh(
-            @CookieValue(name = "refreshToken", required = false) String refreshToken
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response
     ) {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.TOKEN_REFRESH_SUCCESS, authService.refresh(refreshToken)));
+        LoginResult result = authService.refresh(refreshToken);
+        setRefreshTokenCookie(response, result.getRefreshToken());
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.TOKEN_REFRESH_SUCCESS, result.getResponse()));
     }
 
 
