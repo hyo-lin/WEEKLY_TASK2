@@ -1,5 +1,6 @@
 package com.example.community.refreshtoken.model;
 
+import com.example.community.user.model.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,15 +22,16 @@ public class RefreshToken {
     @Column(nullable = false, unique = true)
     private String token;
 
-    @Column(nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
-    public RefreshToken(String token, Long userId, LocalDateTime expiresAt) {
+    public RefreshToken(String token, User user, LocalDateTime expiresAt) {
         this.token = token;
-        this.userId = userId;
+        this.user = user;
         this.expiresAt = expiresAt;
     }
 
