@@ -1,5 +1,7 @@
 package com.example.community.post.dto.request;
 
+import com.example.community.post.model.Post;
+import com.example.community.user.model.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -15,10 +17,14 @@ public class PostCreateRequest {
     private String title;
 
     @NotBlank
-    @JsonProperty("posts_content")
-    private String postsContent;
+    @JsonProperty("post_content")
+    private String content;
 
 
-    @JsonProperty("posts_img")
-    private String postsImg;
+    @JsonProperty("post_image_url")
+    private String imageUrl;
+
+    public Post toEntity(User user) {
+        return Post.create(user, title, content, imageUrl);
+    }
 }

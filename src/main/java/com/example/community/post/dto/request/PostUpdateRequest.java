@@ -15,10 +15,10 @@ public class PostUpdateRequest {
     private String title;
 
     @NotBlank
-    @JsonProperty("posts_content")
-    private String postsContent;
+    @JsonProperty("post_content")
+    private String content;
 
 
-    @JsonProperty("posts_img")
-    private String postsImg;
+    @JsonProperty("post_image_url")
+    private String imageUrl;
 }
