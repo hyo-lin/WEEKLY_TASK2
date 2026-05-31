@@ -26,9 +26,6 @@ public class User {
 
     private String profileImage;
 
-    @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
 
     public static User create(String email, String password, String nickname) {
         User user = new User();

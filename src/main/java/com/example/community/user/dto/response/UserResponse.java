@@ -18,16 +18,12 @@ public class UserResponse {
     @JsonProperty("profile_image")
     private String profileImage;
 
-    @JsonProperty("created_at")
-    private LocalDateTime createdAt;
-
     public static UserResponse from(User user) {
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
-                user.getProfileImage(),
-                user.getCreatedAt()
+                user.getProfileImage()
         );
     }
 }
