@@ -25,22 +25,22 @@ public class AuthService {
 
     //로그인
     @Transactional
-    public LoginResult login(LoginRequest request){
+    public LoginResult login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new GeneralException(StatusCode.INVALID_CREDENTIALS));
 
         if (!user.getPassword().equals(request.getPassword())) {
             throw new GeneralException(StatusCode.INVALID_CREDENTIALS);
         }
+
         String accessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getNickname());
         String refreshToken = jwtProvider.createRefreshToken(user.getId());
 
-        // 기존 리프레시 토큰 삭제 후 새로 저장 (1인 1토큰)
         refreshTokenRepository.deleteByUserId(user.getId());
         refreshTokenRepository.save(new RefreshToken(
                 refreshToken,
-                user.getId(),
-                LocalDateTime.now().plusSeconds(jwtProvider.getAccessTokenExpSeconds() * 8)
+                user,
+                LocalDateTime.now().plusSeconds(jwtProvider.getRefreshTokenExpSeconds())  // 수정
         ));
 
         LoginResponse response = new LoginResponse(
@@ -52,7 +52,6 @@ public class AuthService {
         );
 
         return new LoginResult(response, refreshToken);
-
     }
 
     // 로그아웃
@@ -63,7 +62,7 @@ public class AuthService {
 
     // 액세스 토큰 재발급
     @Transactional
-    public LoginResponse refresh(String refreshToken) {
+    public LoginResult refresh(String refreshToken) {  // LoginResult로 변경
         RefreshToken saved = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new GeneralException(StatusCode.INVALID_CREDENTIALS));
 
@@ -72,17 +71,30 @@ public class AuthService {
             throw new GeneralException(StatusCode.INVALID_CREDENTIALS);
         }
 
-        User user = userRepository.findById(saved.getUserId())
+        User user = userRepository.findById(saved.getUser().getId())
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
 
-        String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getNickname());
+        // 기존 토큰 삭제
+        refreshTokenRepository.delete(saved);
 
-        return new LoginResponse(
+        // 새 토큰 발급 (RTR)
+        String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getNickname());
+        String newRefreshToken = jwtProvider.createRefreshToken(user.getId());
+
+        refreshTokenRepository.save(new RefreshToken(
+                newRefreshToken,
+                user,
+                LocalDateTime.now().plusSeconds(jwtProvider.getRefreshTokenExpSeconds())
+        ));
+
+        LoginResponse response = new LoginResponse(
                 newAccessToken,
                 jwtProvider.getAccessTokenExpSeconds(),
                 user.getId(),
                 user.getEmail(),
                 user.getNickname()
         );
+
+        return new LoginResult(response, newRefreshToken);
     }
 }
