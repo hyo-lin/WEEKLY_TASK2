@@ -3,7 +3,7 @@ package com.example.community.auth.controller;
 import com.example.community.auth.dto.request.LoginRequest;
 import com.example.community.auth.dto.response.LoginResponse;
 import com.example.community.auth.dto.response.LoginResult;
-import com.example.community.auth.jwt.JwtProperties;
+import com.example.community.global.jwt.JwtProperties;
 import com.example.community.auth.service.AuthService;
 import com.example.community.global.response.CommonResponse;
 import com.example.community.global.response.StatusCode;
