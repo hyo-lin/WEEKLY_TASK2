@@ -68,6 +68,4 @@ public class PostController {
         return ResponseEntity.ok(CommonResponse.success(StatusCode.DELETE_POST_SUCCESS, null));
     }
 
-
-
 }
