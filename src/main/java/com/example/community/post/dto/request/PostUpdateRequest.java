@@ -18,7 +18,6 @@ public class PostUpdateRequest {
     @JsonProperty("post_content")
     private String content;
 
-
-    @JsonProperty("post_image_url")
-    private String imageUrl;
+    @JsonProperty("attach_file_url")
+    private String attachFileUrl;
 }
