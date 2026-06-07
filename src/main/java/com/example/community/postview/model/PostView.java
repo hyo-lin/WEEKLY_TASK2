@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
+@Table(name = "post_view")
 public class PostView {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
