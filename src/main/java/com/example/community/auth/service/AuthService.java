@@ -3,7 +3,7 @@ package com.example.community.auth.service;
 import com.example.community.auth.dto.request.LoginRequest;
 import com.example.community.auth.dto.response.LoginResponse;
 import com.example.community.auth.dto.response.LoginResult;
-import com.example.community.auth.jwt.JwtProvider;
+import com.example.community.global.jwt.JwtProvider;
 import com.example.community.global.exception.GeneralException;
 import com.example.community.global.response.StatusCode;
 import com.example.community.refreshtoken.model.RefreshToken;
@@ -33,7 +33,7 @@ public class AuthService {
             throw new GeneralException(StatusCode.INVALID_CREDENTIALS);
         }
 
-        String accessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getNickname());
+        String accessToken = jwtProvider.createAccessToken(user.getId());
         String refreshToken = jwtProvider.createRefreshToken(user.getId());
 
         refreshTokenRepository.deleteByUserId(user.getId());
@@ -78,7 +78,7 @@ public class AuthService {
         refreshTokenRepository.delete(saved);
 
         // 새 토큰 발급 (RTR)
-        String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getNickname());
+        String newAccessToken = jwtProvider.createAccessToken(user.getId());
         String newRefreshToken = jwtProvider.createRefreshToken(user.getId());
 
         refreshTokenRepository.save(new RefreshToken(
