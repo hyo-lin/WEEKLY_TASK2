@@ -20,11 +20,10 @@ public class PostCreateRequest {
     @JsonProperty("post_content")
     private String content;
 
-
-    @JsonProperty("post_image_url")
-    private String imageUrl;
+    @JsonProperty("attach_file_url")
+    private String attachFileUrl;
 
     public Post toEntity(User user) {
-        return Post.create(user, title, content, imageUrl);
+        return Post.create(user, title, content);
     }
 }
