@@ -51,9 +51,16 @@ public enum StatusCode {
     PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "password_mismatch"),
 
     // --- 이미지 업로드 관련  ---
-    UPLOAD_IMAGE_SUCCESS(HttpStatus.OK, "upload_image_success"),
-    UPLOAD_FILE_SUCCESS(HttpStatus.OK, "upload_file_success"),
-    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "upload_image_fail"),
+    IMAGE_UPLOAD_SUCCESS(HttpStatus.OK, "image_upload_success"),
+    IMAGE_DELETE_SUCCESS(HttpStatus.OK, "image_delete_success"),
+    INVALID_IMAGE_EMPTY(HttpStatus.BAD_REQUEST, "image_empty"),
+    INVALID_IMAGE_SIZE(HttpStatus.BAD_REQUEST, "image_size_exceeded"),
+    INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST, "invalid_image_extension"),
+    INVALID_IMAGE_MIME_TYPE(HttpStatus.BAD_REQUEST, "invalid_image_mime_type"),
+    INVALID_IMAGE_CONTENT(HttpStatus.BAD_REQUEST, "invalid_image_content"),
+    IMAGE_STORE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "image_store_failed"),
+    IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "image_delete_failed"),
+    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "image_not_found"),
 
     // --- 공통 에러 ---
     INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "invalid_parameter_format"),
