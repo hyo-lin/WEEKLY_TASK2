@@ -38,7 +38,7 @@ public class SignUpRequest {
     @JsonProperty("profileImageUrl")
     private String profileImageUrl;
 
-    public User toEntity() {
-        return User.create(email, password, nickname);
+    public User toEntity(String encodedPassword) {
+        return User.create(email, encodedPassword, nickname);
     }
 }
