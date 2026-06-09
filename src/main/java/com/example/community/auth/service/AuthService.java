@@ -10,6 +10,7 @@ import com.example.community.refreshtoken.model.RefreshToken;
 import com.example.community.refreshtoken.repository.RefreshTokenRepository;
 import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProvider jwtProvider;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     //로그인
     @Transactional
@@ -29,7 +31,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new GeneralException(StatusCode.INVALID_CREDENTIALS));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new GeneralException(StatusCode.INVALID_CREDENTIALS);
         }
 
