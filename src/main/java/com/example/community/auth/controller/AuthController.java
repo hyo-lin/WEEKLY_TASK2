@@ -32,18 +32,16 @@ public class AuthController {
     public ResponseEntity<CommonResponse<Map<String, Object>>> authCheck(
             @RequestAttribute(value = "userId", required = false) Long userId
     ) {
-
         if (userId == null) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(new CommonResponse<>(StatusCode.INVALID_CREDENTIALS.getMessage(), null));
         }
-        Map<String, Object> dataMap = Map.of("profileImageUrl", "");
-
-        return ResponseEntity.ok(CommonResponse.success(
-                StatusCode.AUTH_CHECK_SUCCESS,
-                dataMap
-        ));
+        Map<String, Object> dataMap = Map.of(
+                "profileImageUrl", "",
+                "user_id", userId  // 추가
+        );
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.AUTH_CHECK_SUCCESS, dataMap));
     }
 
     // 로그인
