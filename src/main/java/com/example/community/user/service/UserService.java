@@ -9,6 +9,7 @@ import com.example.community.user.dto.request.UpdateUserRequest;
 import com.example.community.user.dto.response.UserResponse;
 import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,18 +21,20 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ProfileImageService profileImageService;
+    private final BCryptPasswordEncoder passwordEncoder;
 
 
     @Transactional
     public UserResponse signUp(SignUpRequest request) {
         if (!request.getPassword().equals(request.getPasswordConfirm()))
             throw new GeneralException(StatusCode.PASSWORD_CONFIRM_MISMATCH);
-        if (userRepository.existsByEmail(request.getEmail()))
+        if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail()))
             throw new GeneralException(StatusCode.DUPLICATE_EMAIL);
-        if (userRepository.existsByNickname(request.getNickname()))
+        if (userRepository.existsByNicknameAndDeletedAtIsNull(request.getNickname()))
             throw new GeneralException(StatusCode.DUPLICATE_NICKNAME);
 
-        User user = userRepository.save(request.toEntity());
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        User user = userRepository.save(request.toEntity(encodedPassword));
 
         if (request.getProfileImageUrl() != null) {
             profileImageService.assignUser(user, request.getProfileImageUrl());
@@ -42,12 +45,12 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public boolean checkEmailDuplication(String email) {
-        return userRepository.existsByEmail(email); // 존재하면 true, 없으면 false
+        return userRepository.existsByEmailAndDeletedAtIsNull(email); // 존재하면 true, 없으면 false
     }
 
     @Transactional(readOnly = true)
     public boolean checkNicknameDuplication(String nickname) {
-        return userRepository.existsByNickname(nickname); // 존재하면 true, 없으면 false
+        return userRepository.existsByNicknameAndDeletedAtIsNull(nickname); // 존재하면 true, 없으면 false
     }
 
     @Transactional
@@ -61,7 +64,7 @@ public class UserService {
     public UserResponse updateUser(Long userId, UpdateUserRequest request) {
         User user = findUserOrThrow(userId);
         if (!user.getNickname().equals(request.getNickname())
-                && userRepository.existsByNickname(request.getNickname()))
+                && userRepository.existsByNicknameAndDeletedAtIsNull(request.getNickname()))
             throw new GeneralException(StatusCode.DUPLICATE_NICKNAME);
 
         user.updateNickname(request.getNickname());
@@ -84,12 +87,15 @@ public class UserService {
         if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
             throw new GeneralException(StatusCode.PASSWORD_CONFIRM_MISMATCH);
         }
-        user.updatePassword(request.getNewPassword());
+        user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
     // 프로필 이미지 삭제 후 유저 소프트딜리트
     @Transactional
     public void deleteUser(Long userId) {
         User user = findUserOrThrow(userId);
+        if (!user.isActive()) {
+            throw new GeneralException(StatusCode.USER_NOT_FOUND); // 혹은 이미 탈퇴한 회원 에러코드 사용
+        }
         profileImageService.deleteIfExists(userId);
         user.delete();  // deleteById 대신 소프트딜리트
     }
@@ -97,5 +103,6 @@ public class UserService {
     private User findUserOrThrow(Long userId){
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
+
     }
 }

@@ -8,7 +8,9 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User,Long> {
     Optional<User> findByEmail(String email);
 
-    boolean existsByEmail(String email);
+    // ️ 이메일 조건문 처리: 이메일이 일치하고 && 아직 탈퇴하지 않은 유저가 있는지 확인
+    boolean existsByEmailAndDeletedAtIsNull(String email);
 
-    boolean existsByNickname(String nickname);
+    // ️ 닉네임 조건문 처리: 닉네임이 일치하고 && 아직 탈퇴하지 않은 유저가 있는지 확인
+    boolean existsByNicknameAndDeletedAtIsNull(String nickname);
 }
