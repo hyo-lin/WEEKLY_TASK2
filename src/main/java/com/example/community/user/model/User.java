@@ -3,10 +3,15 @@ package com.example.community.user.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import jakarta.persistence.Id;
-@Getter
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDateTime;
+
+@Getter
 @Table(name = "user")
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,8 +27,11 @@ public class User {
     @Column(nullable = false, unique = true)
     private String nickname;
 
-    private String profileImage;
+    @CreatedDate
+    @Column(updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 
+    private LocalDateTime deletedAt;
 
     public static User create(String email, String password, String nickname) {
         User user = new User();
@@ -37,13 +45,14 @@ public class User {
         this.nickname = nickname;
     }
 
-    public void updateProfileImage(String profileImage) {
-        this.profileImage = profileImage;
-    }
-
     public void updatePassword(String password) {
         this.password = password;
     }
 
-
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+    public boolean isActive() {
+        return this.deletedAt == null;
+    }
 }

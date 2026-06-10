@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -18,9 +19,6 @@ public class PostResponse {
 
     @JsonProperty("post_content")
     private String content;
-
-    @JsonProperty("post_image_url")
-    private String imageUrl;
 
     @JsonProperty("user_id")
     private Long userId;
@@ -36,20 +34,23 @@ public class PostResponse {
     @JsonProperty("comment_count")
     private int commentCount;
 
+    @JsonProperty("image_urls")
+    private List<String> imageUrls;
+
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
-    public static PostResponse from(Post post) {
+    public static PostResponse from(Post post, int viewCount, List<String> imageUrls) {
         return new PostResponse(
                 post.getId(),
                 post.getTitle(),
                 post.getContent(),
-                post.getImageUrl(),
                 post.getUser().getId(),
                 post.getUser().getNickname(),
                 post.getLikeCount(),
-                post.getViewCount(),
+                viewCount,
                 post.getCommentCount(),
+                imageUrls,
                 post.getCreatedAt()
         );
     }

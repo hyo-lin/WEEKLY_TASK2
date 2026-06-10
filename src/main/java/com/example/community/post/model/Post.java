@@ -24,7 +24,6 @@ public class Post {
 
     private String title;
     private String content;
-    private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -37,25 +36,20 @@ public class Post {
     @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
 
-    @Column(name = "view_count", nullable = false)
-    private int viewCount = 0;
-
     @Column(name = "comment_count", nullable = false)
     private int commentCount = 0;
 
-    public static Post create(User user, String title, String content, String imageUrl) {
+    public static Post create(User user, String title, String content) {
         Post post = new Post();
         post.user = user;
         post.title = title;
         post.content = content;
-        post.imageUrl = imageUrl;
         return post;
     }
 
-    public void update(String title, String content, String imageUrl) {
+    public void update(String title, String content) {
         this.title = title;
         this.content = content;
-        this.imageUrl = imageUrl;
     }
 
     public void increaseLikeCount() {

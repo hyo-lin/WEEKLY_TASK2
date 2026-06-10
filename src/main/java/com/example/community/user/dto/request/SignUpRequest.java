@@ -9,7 +9,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
 @Getter
-
 public class SignUpRequest {
 
     @NotBlank
@@ -36,10 +35,10 @@ public class SignUpRequest {
     )
     private String nickname;
 
-    @JsonProperty("profile_image")
-    private String profileImage;
+    @JsonProperty("profileImageUrl")
+    private String profileImageUrl;
 
-    public User toEntity() {
-        return User.create(email, password, nickname);
+    public User toEntity(String encodedPassword) {
+        return User.create(email, encodedPassword, nickname);
     }
 }

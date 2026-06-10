@@ -8,6 +8,7 @@ import com.example.community.post.dto.response.PostResponse;
 import com.example.community.post.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,8 +27,8 @@ public class PostController {
             @RequestAttribute("userId") Long userId,
             @RequestBody @Valid PostCreateRequest request
     ) {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.CREATE_POST_SUCCESS, postService.createPost(userId, request)));
-    }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CommonResponse.success(StatusCode.CREATE_POST_SUCCESS, postService.createPost(userId, request)));    }
 
     // 게시글 목록 조회(댓글 제외)
     @GetMapping
@@ -64,10 +65,8 @@ public class PostController {
             @PathVariable Long postId,
             @RequestAttribute("userId") Long userId
     ) {
-        postService.deletePost(userId, postId);
+        postService.deletePost(postId,userId);
         return ResponseEntity.ok(CommonResponse.success(StatusCode.DELETE_POST_SUCCESS, null));
     }
-
-
 
 }

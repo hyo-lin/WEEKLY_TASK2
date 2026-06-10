@@ -18,6 +18,6 @@ public class UpdateUserRequest {
     )
     private String nickname;
 
-    @JsonProperty("profile_image")
-    private String profileImage;
+    @JsonProperty("profileImageUrl")
+    private String profileImageUrl;
 }

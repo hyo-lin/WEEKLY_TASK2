@@ -8,6 +8,7 @@ import com.example.community.global.response.CommonResponse;
 import com.example.community.global.response.StatusCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,8 +28,8 @@ public class CommentController {
             @RequestAttribute("userId") Long userId,
             @RequestBody @Valid CommentCreateRequest request
     ){
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.CREATE_COMMENT_SUCCESS, commentService.createComment(postId, userId, request)));
-
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CommonResponse.success(StatusCode.CREATE_COMMENT_SUCCESS, commentService.createComment(postId, userId, request)));
     }
     // 댓글 목록 조회
     @GetMapping

@@ -2,6 +2,7 @@ package com.example.community.user.controller;
 
 import com.example.community.global.response.CommonResponse;
 import com.example.community.global.response.StatusCode;
+import com.example.community.image.service.ProfileImageService;
 import com.example.community.user.dto.request.SignUpRequest;
 import com.example.community.user.dto.request.UpdatePasswordRequest;
 import com.example.community.user.dto.request.UpdateUserRequest;
@@ -18,15 +19,14 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final ProfileImageService profileImageService;
 
     // 회원가입
     @PostMapping("/users")
     public ResponseEntity<CommonResponse<UserResponse>> signUp(
-            @RequestBody
-            @Valid SignUpRequest request
-    ){
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
+            @RequestBody @Valid SignUpRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.success(StatusCode.SIGN_UP_SUCCESS, userService.signUp(request)));
     }
 
@@ -61,7 +61,9 @@ public class UserController {
             @RequestAttribute("userId") Long userId,
             @RequestBody @Valid UpdateUserRequest request
     ) {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.UPDATE_USER_SUCCESS, userService.updateUser(userId, request)));
+        return ResponseEntity.ok(CommonResponse.success(
+                StatusCode.UPDATE_USER_SUCCESS,
+                userService.updateUser(userId, request)));
     }
 
     // 비밀번호 수정
@@ -72,6 +74,15 @@ public class UserController {
     ) {
         userService.updatePassword(userId, request);
         return ResponseEntity.ok(CommonResponse.success(StatusCode.UPDATE_PASSWORD_SUCCESS, null));
+    }
+
+    // 회원 이미지 삭제
+    @DeleteMapping("/users/me/image")
+    public ResponseEntity<CommonResponse<Void>> deleteProfileImage(
+            @RequestAttribute("userId") Long userId
+    ) {
+        profileImageService.delete(userId);
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.IMAGE_DELETE_SUCCESS, null));
     }
 
     // 회원탈퇴
