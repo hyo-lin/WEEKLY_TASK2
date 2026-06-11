@@ -33,6 +33,7 @@ public class CommentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
         Comment comment=Comment.create(post,user,request.getContent());
+        post.increaseCommentCount();
         return CommentResponse.from(commentRepository.save(comment));
     }
     // 댓글 목록 조회
@@ -61,6 +62,7 @@ public class CommentService {
         if (!comment.getUser().getId().equals(userId)) {
             throw new GeneralException(StatusCode.FORBIDDEN);
         }
+        comment.getPost().decreaseCommentCount();
         commentRepository.deleteById(commentId);
     }
 
