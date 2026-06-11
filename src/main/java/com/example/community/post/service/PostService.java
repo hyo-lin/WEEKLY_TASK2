@@ -59,7 +59,7 @@ public class PostService {
     }
 
     // 목록에서는 이미지 미포함
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PostResponse> getPosts(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -73,7 +73,7 @@ public class PostService {
     }
 
     // 게시글 상세조회, 이미지 URL 목록 포함
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse getPost(Long postId) {
         Post post = findPostOrThrow(postId);
         int viewCount = post.getViewCount() + viewCountBuffer.get(postId);
