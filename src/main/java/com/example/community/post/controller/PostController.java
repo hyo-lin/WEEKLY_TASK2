@@ -21,6 +21,15 @@ public class PostController {
 
     private final PostService postService;
 
+    // 게시물 검색
+    @GetMapping("/search")
+    public ResponseEntity<CommonResponse<List<PostResponse>>> searchPosts(
+            @RequestAttribute("userId") Long userId,
+            @RequestParam String keyword
+    ) {
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POSTS_SUCCESS, postService.searchPosts(keyword)));
+    }
+
     // 게시글 등록
     @PostMapping
     public ResponseEntity<CommonResponse<PostResponse>> createPost(
