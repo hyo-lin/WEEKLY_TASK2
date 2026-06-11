@@ -8,17 +8,17 @@ import com.example.community.post.dto.request.PostUpdateRequest;
 import com.example.community.post.dto.response.PostResponse;
 import com.example.community.post.model.Post;
 import com.example.community.post.repository.PostRepository;
-import com.example.community.postview.repository.PostViewRepository;
-import com.example.community.postview.service.ViewCountService;
+import com.example.community.postview.buffer.ViewCountBuffer;
+import com.example.community.postview.event.PostViewedEvent;
 import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,9 +27,20 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final ViewCountService viewCountService;
-    private final PostViewRepository postViewRepository;
     private final PostImageService postImageService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ViewCountBuffer viewCountBuffer;
+
+
+    @Transactional(readOnly = true)
+    public List<PostResponse> searchPosts(String keyword) {
+        return postRepository.searchByTitle(keyword).stream()
+                .map(post -> PostResponse.from(post,
+                        post.getViewCount() + viewCountBuffer.get(post.getId()),
+                        List.of()))
+                .collect(Collectors.toList());
+    }
+
     // 게시글 추가
     // 제목 26자 초과 시 invalid_title_length 반환
     // 필수값 누락 시 missing_required_fields 반환
@@ -47,51 +58,33 @@ public class PostService {
         return PostResponse.from(post, 0, imageUrls);
     }
 
-    // 목록 조회:  DB 조회수와 Redis 캐시 조회수를 합산하여 반환
     // 목록에서는 이미지 미포함
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PostResponse> getPosts(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         List<Post> posts = postRepository.findAll(pageRequest).getContent();
 
-        List<Long> postIds = posts.stream()
-                .map(Post::getId).collect(Collectors.toList());
-
-        // DB 조회수: 쿼리 1번
-        Map<Long, Integer> dbCountMap = postViewRepository
-                .countByPostIds(postIds).stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> ((Long) row[1]).intValue()));
-
-        // Redis 조회수:  1번
-        Map<Long, Integer> cachedCountMap =
-                viewCountService.getCachedCounts(postIds);
-
         return posts.stream()
                 .map(post -> PostResponse.from(post,
-                        dbCountMap.getOrDefault(post.getId(), 0) +
-                                cachedCountMap.getOrDefault(post.getId(), 0),
+                        post.getViewCount() + viewCountBuffer.get(post.getId()),
                         List.of()))
                 .collect(Collectors.toList());
     }
 
-    // 상세 조회: Redis +1 후 합산 조회수
-    // 이미지 URL 목록 포함
-    @Transactional(readOnly = true)
+    // 게시글 상세조회, 이미지 URL 목록 포함
+    @Transactional
     public PostResponse getPost(Long postId) {
         Post post = findPostOrThrow(postId);
-        viewCountService.increment(postId);
-        int viewCount = viewCountService.getViewCount(postId);
+        int viewCount = post.getViewCount() + viewCountBuffer.get(postId);
+
+        eventPublisher.publishEvent(new PostViewedEvent(postId));
 
         List<String> imageUrls = postImageService.getImageUrls(postId);
-
         return PostResponse.from(post, viewCount, imageUrls);
     }
 
     // 게시글 수정
-
     @Transactional
     public PostResponse updatePost(Long postId, Long userId, PostUpdateRequest request) {
         Post post = findPostOrThrow(postId);
@@ -105,7 +98,7 @@ public class PostService {
         }
 
         List<String> imageUrls = postImageService.getImageUrls(postId);
-        return PostResponse.from(post, viewCountService.getViewCount(postId), imageUrls);
+        return PostResponse.from(post, post.getViewCount(), imageUrls);
     }
 
     // 게시글 삭제
