@@ -39,6 +39,23 @@ public class Post {
     @Column(name = "comment_count", nullable = false)
     private int commentCount = 0;
 
+    @Column(nullable = false)
+    private int viewCount = 0;
+
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
+
+    public void increaseCommentCount() {
+        this.commentCount++;
+    }
+
+    public void decreaseCommentCount() {
+        if (this.commentCount > 0) {
+            this.commentCount--;
+        }
+    }
+
     public static Post create(User user, String title, String content) {
         Post post = new Post();
         post.user = user;
