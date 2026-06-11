@@ -25,10 +25,5 @@ scheduler:
   sync:
     fixed-delay: ${SCHEDULER_TIME}
 
-redis:
-  view-count:
-    key-pattern: ${REDIS_KEY}
-    ttl-days: ${REDIS_TTL_DAYS}
-
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS}
