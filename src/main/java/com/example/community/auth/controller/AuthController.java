@@ -3,10 +3,14 @@ package com.example.community.auth.controller;
 import com.example.community.auth.dto.request.LoginRequest;
 import com.example.community.auth.dto.response.LoginResponse;
 import com.example.community.auth.dto.response.LoginResult;
+import com.example.community.global.exception.GeneralException;
 import com.example.community.global.jwt.JwtProperties;
 import com.example.community.auth.service.AuthService;
 import com.example.community.global.response.CommonResponse;
 import com.example.community.global.response.StatusCode;
+import com.example.community.image.service.ProfileImageService;
+import com.example.community.user.model.User;
+import com.example.community.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -17,6 +21,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -26,6 +31,8 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtProperties jwtProperties;
+    private final ProfileImageService profileImageService;
+    private final UserRepository userRepository;
 
     // 로그인 상태 확인
     @GetMapping("/check")
@@ -37,10 +44,16 @@ public class AuthController {
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(new CommonResponse<>(StatusCode.INVALID_CREDENTIALS.getMessage(), null));
         }
-        Map<String, Object> dataMap = Map.of(
-                "profileImageUrl", "",
-                "user_id", userId  // 추가
-        );
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
+        String profileImageUrl = profileImageService.getImageUrl(userId);
+
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put("user_id", userId);
+        dataMap.put("email", user.getEmail());
+        dataMap.put("nickname", user.getNickname());
+        dataMap.put("profile_image", profileImageUrl);
         return ResponseEntity.ok(CommonResponse.success(StatusCode.AUTH_CHECK_SUCCESS, dataMap));
     }
 
