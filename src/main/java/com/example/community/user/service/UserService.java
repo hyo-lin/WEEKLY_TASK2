@@ -37,7 +37,7 @@ public class UserService {
         User user = userRepository.save(request.toEntity(encodedPassword));
 
         if (request.getProfileImageUrl() != null) {
-            profileImageService.assignUser(user, request.getProfileImageUrl());
+            profileImageService.saveImage(user, request.getProfileImageUrl());
         }
 
         return UserResponse.from(user, request.getProfileImageUrl());
