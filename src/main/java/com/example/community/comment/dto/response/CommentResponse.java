@@ -22,15 +22,20 @@ public class CommentResponse {
     private String nickname;
     private String content;
 
+    @JsonProperty("profile_image")
+    private String profileImage;
+
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
-    public static CommentResponse from(Comment comment){
-        return new CommentResponse(comment.getId(),
+    public static CommentResponse from(Comment comment, String profileImageUrl) {
+        return new CommentResponse(
+                comment.getId(),
                 comment.getPost().getId(),
                 comment.getUser().getId(),
                 comment.getUser().getNickname(),
                 comment.getContent(),
+                profileImageUrl,
                 comment.getCreatedAt()
         );
     }
