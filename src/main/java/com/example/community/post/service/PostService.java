@@ -3,11 +3,13 @@ package com.example.community.post.service;
 import com.example.community.global.exception.GeneralException;
 import com.example.community.global.response.StatusCode;
 import com.example.community.image.service.PostImageService;
+import com.example.community.image.service.ProfileImageService;
 import com.example.community.post.dto.request.PostCreateRequest;
 import com.example.community.post.dto.request.PostUpdateRequest;
 import com.example.community.post.dto.response.PostResponse;
 import com.example.community.post.model.Post;
 import com.example.community.post.repository.PostRepository;
+import com.example.community.postlike.repository.PostLikeRepository;
 import com.example.community.postview.buffer.ViewCountBuffer;
 import com.example.community.postview.event.PostViewedEvent;
 import com.example.community.user.model.User;
@@ -30,14 +32,19 @@ public class PostService {
     private final PostImageService postImageService;
     private final ApplicationEventPublisher eventPublisher;
     private final ViewCountBuffer viewCountBuffer;
+    private final ProfileImageService profileImageService;
+    private final PostLikeRepository postLikeRepository;
 
-
+    // 게시글 검색
     @Transactional(readOnly = true)
-    public List<PostResponse> searchPosts(String keyword) {
-        return postRepository.searchByTitle(keyword).stream()
+    public List<PostResponse> searchPosts(String keyword, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        return postRepository.findByTitleContaining(keyword, pageRequest).stream()
                 .map(post -> PostResponse.from(post,
                         post.getViewCount() + viewCountBuffer.get(post.getId()),
-                        List.of()))
+                        List.of(),
+                        profileImageService.getImageUrl(post.getUser().getId())))
                 .collect(Collectors.toList());
     }
 
@@ -55,7 +62,8 @@ public class PostService {
         }
 
         List<String> imageUrls = postImageService.getImageUrls(post.getId());
-        return PostResponse.from(post, 0, imageUrls);
+        return PostResponse.from(post, 0, imageUrls,
+                profileImageService.getImageUrl(userId));
     }
 
     // 목록에서는 이미지 미포함
@@ -63,14 +71,15 @@ public class PostService {
     public List<PostResponse> getPosts(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<Post> posts = postRepository.findAll(pageRequest).getContent();
-
+        List<Post> posts = postRepository.findAllActive(pageRequest).getContent();
         return posts.stream()
                 .map(post -> PostResponse.from(post,
                         post.getViewCount() + viewCountBuffer.get(post.getId()),
-                        List.of()))
+                        List.of(),
+                        profileImageService.getImageUrl(post.getUser().getId())))
                 .collect(Collectors.toList());
     }
+
 
     // 게시글 상세조회, 이미지 URL 목록 포함
     @Transactional(readOnly = true)
@@ -81,7 +90,8 @@ public class PostService {
         eventPublisher.publishEvent(new PostViewedEvent(postId));
 
         List<String> imageUrls = postImageService.getImageUrls(postId);
-        return PostResponse.from(post, viewCount, imageUrls);
+        return PostResponse.from(post, viewCount, imageUrls,
+                profileImageService.getImageUrl(post.getUser().getId()));
     }
 
     // 게시글 수정
@@ -92,13 +102,13 @@ public class PostService {
             throw new GeneralException(StatusCode.FORBIDDEN);
 
         post.update(request.getTitle(), request.getContent());
-        // 새 이미지 URL이 있으면 기존 이미지 소프트딜리트 후 교체
         if (request.getAttachFileUrl() != null) {
             postImageService.replaceImage(post, request.getAttachFileUrl());
         }
 
         List<String> imageUrls = postImageService.getImageUrls(postId);
-        return PostResponse.from(post, post.getViewCount(), imageUrls);
+        return PostResponse.from(post, post.getViewCount(), imageUrls,
+                profileImageService.getImageUrl(post.getUser().getId()));
     }
 
     // 게시글 삭제
@@ -108,13 +118,14 @@ public class PostService {
         if (!post.getUser().getId().equals(userId)) {
             throw new GeneralException(StatusCode.FORBIDDEN);
         }
-        postImageService.deleteIfExists(postId);
-        postRepository.deleteById(postId);
+        postImageService.softDeleteImages(postId);     // DB에 바로 반영됨
+        postLikeRepository.deleteByPostId(postId);
+        post.delete();
     }
 
     // 공통: 게시글 조회 + 없으면 예외
     private Post findPostOrThrow(Long postId) {
-        return postRepository.findById(postId)
+        return postRepository.findByIdAndDeletedAtIsNull(postId)
                 .orElseThrow(() -> new GeneralException(StatusCode.POST_NOT_FOUND));
     }
 }
