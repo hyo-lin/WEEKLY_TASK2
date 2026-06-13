@@ -34,13 +34,16 @@ public class PostResponse {
     @JsonProperty("comment_count")
     private int commentCount;
 
+    @JsonProperty("profile_image")
+    private String profileImage;
+
     @JsonProperty("image_urls")
     private List<String> imageUrls;
 
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
-    public static PostResponse from(Post post, int viewCount, List<String> imageUrls) {
+    public static PostResponse from(Post post, int viewCount, List<String> imageUrls, String profileImageUrl) {
         return new PostResponse(
                 post.getId(),
                 post.getTitle(),
@@ -50,6 +53,7 @@ public class PostResponse {
                 post.getLikeCount(),
                 viewCount,
                 post.getCommentCount(),
+                profileImageUrl,
                 imageUrls,
                 post.getCreatedAt()
         );
