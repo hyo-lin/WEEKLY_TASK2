@@ -16,6 +16,10 @@ com.example.community
 │   ├── exception
 │   │   ├── GeneralException
 │   │   └── GlobalExceptionHandler
+|   |── jwt
+|   |   ├── JwtProperties
+|   |   ├── JwtProvider
+|   |   └── JwtAuthenticationFilter
 │   └── response
 │       ├── CommonResponse
 │       ├── ErrorResponse
@@ -26,15 +30,12 @@ com.example.community
 │   ├── service
 │   │   └── AuthService
 │   ├── dto
-│   │   ├── request
-│   │   │   └── LoginRequest
-│   │   └── response
-│   │       ├── LoginResponse
-│   │       └── LoginResult
-│   └── jwt
-│       ├── JwtProperties
-│       ├── JwtProvider
-│       └── JwtAuthenticationFilter
+│       ├── request
+│       │   └── LoginRequest
+│       └── response
+│           ├── LoginResponse
+│           └── LoginResult
+│   
 ├── user
 │   ├── controller
 │   │   └── UserController
@@ -97,9 +98,17 @@ com.example.community
 │       └── RefreshToken
 └── image
     ├── controller
-    │   └── ImageController
+    ├── model
+    │   ├── PostImage
+    │   └── ProfileImage
+    ├── repository
+    │   ├── PostImageRepository
+    │   └── ProfileImageRepository
     └── service
-        └── ImageServicee
+        ├── FileService
+        ├── ImageProcessor
+        ├── PostImageService
+        └── ProfileImageService
 ```
 
 ## 설계 고려사항
@@ -195,5 +204,5 @@ typ 클레임에 access 또는 refresh 값을 넣어 구분했다.
 ###  이미지 (Image)
 | Method | URL | 설명 | 인증 필요 |
 | :--- | :--- | :--- | :---: |
-| `POST` | `/v1/users/upload/profile-image` | 프로필 이미지 업로드 | **O** |
-| `POST` | `/v1/posts/upload/attach-file` | 게시글 이미지 업로드 | **O** |
+| `POST` | `/images/profile` | 프로필 이미지 업로드 | **O** |
+| `POST` | `/images/post` | 게시글 이미지 업로드 | **O** |
