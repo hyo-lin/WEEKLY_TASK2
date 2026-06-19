@@ -21,13 +21,10 @@ public class ViewCountSyncScheduler {
     public void sync() {
         if (viewCountBuffer.isEmpty()) return;
 
-        viewCountBuffer.getAll().forEach((postId, count) -> {
+        viewCountBuffer.drainAll().forEach((postId, count) -> {
             postRepository.findById(postId).ifPresent(post -> {
-                for (int i = 0; i < count; i++) {
                     post.increaseViewCount();
-                }
             });
-            viewCountBuffer.clear(postId);
         });
     }
 }
