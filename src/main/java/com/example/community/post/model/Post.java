@@ -5,11 +5,13 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
@@ -59,6 +61,8 @@ public class Post {
     public void decreaseCommentCount() {
         if (this.commentCount > 0) {
             this.commentCount--;
+        }else {
+            log.warn("commentCount가 이미 0입니다. postId={}", this.id);
         }
     }
 
@@ -82,6 +86,8 @@ public class Post {
     public void decreaseLikeCount() {
         if (this.likeCount > 0) {
             this.likeCount--;
+        }else {
+            log.warn("likeCount가 이미 0입니다. postId={}", this.id);
         }
     }
 }
