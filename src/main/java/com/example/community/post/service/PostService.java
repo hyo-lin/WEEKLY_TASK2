@@ -37,7 +37,9 @@ public class PostService {
 
     // 게시글 검색
     @Transactional(readOnly = true)
-    public List<PostResponse> searchPosts(String keyword, int page, int size) {
+    public List<PostResponse> searchPosts(Long userId, String keyword, int page, int size) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
         PageRequest pageRequest = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         return postRepository.findByTitleContaining(keyword, pageRequest).stream()
@@ -68,7 +70,9 @@ public class PostService {
 
     // 목록에서는 이미지 미포함
     @Transactional(readOnly = true)
-    public List<PostResponse> getPosts(int page, int size) {
+    public List<PostResponse> getPosts(Long userId, int page, int size) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
         PageRequest pageRequest = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         List<Post> posts = postRepository.findAllActive(pageRequest).getContent();
@@ -83,7 +87,9 @@ public class PostService {
 
     // 게시글 상세조회, 이미지 URL 목록 포함
     @Transactional(readOnly = true)
-    public PostResponse getPost(Long postId) {
+    public PostResponse getPost(Long userId, Long postId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
         Post post = findPostOrThrow(postId);
         int viewCount = post.getViewCount() + viewCountBuffer.get(postId);
 
