@@ -31,7 +31,7 @@ public class PostController {
     ) {
         return ResponseEntity.ok(CommonResponse.success(
                 StatusCode.GET_POSTS_SUCCESS,
-                postService.searchPosts(keyword, page, size)));
+                postService.searchPosts(userId, keyword, page, size)));
     }
 
     // 게시글 등록
@@ -41,7 +41,8 @@ public class PostController {
             @RequestBody @Valid PostCreateRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(CommonResponse.success(StatusCode.CREATE_POST_SUCCESS, postService.createPost(userId, request)));    }
+                .body(CommonResponse.success(StatusCode.CREATE_POST_SUCCESS, postService.createPost(userId, request)));
+    }
 
     // 게시글 목록 조회(댓글 제외)
     @GetMapping
@@ -50,7 +51,7 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POSTS_SUCCESS, postService.getPosts(page, size)));
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POSTS_SUCCESS, postService.getPosts(userId, page, size)));
     }
 
     // 게시물 상세조회
@@ -59,7 +60,7 @@ public class PostController {
             @PathVariable Long postId,
             @RequestAttribute("userId") Long userId
     ) {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POST_SUCCESS, postService.getPost(postId)));
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POST_SUCCESS, postService.getPost(userId, postId)));
     }
 
     // 게시글 수정
