@@ -1,6 +1,8 @@
 package com.example.community.postview.buffer;
 
 import org.springframework.stereotype.Component;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -16,12 +18,13 @@ public class ViewCountBuffer {
         return buffer.getOrDefault(postId, 0);
     }
 
-    public ConcurrentHashMap<Long, Integer> getAll() {
-        return buffer;
-    }
-
-    public void clear(Long postId) {
-        buffer.remove(postId);
+    public Map<Long, Integer> drainAll() {
+        Map<Long, Integer> snapshot = new HashMap<>();
+        buffer.keySet().forEach(postId -> {
+            Integer count = buffer.remove(postId);
+            if (count != null) snapshot.put(postId, count);
+        });
+        return snapshot;
     }
 
     public boolean isEmpty() {
