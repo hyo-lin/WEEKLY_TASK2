@@ -22,7 +22,7 @@ public class PostLikeService {
 
     // 좋아요
     @Transactional
-    public void like(Long postId, Long userId) {
+    public int like(Long postId, Long userId) {
         if (postLikeRepository.existsByPostIdAndUserId(postId, userId)) {
             throw new GeneralException(StatusCode.ALREADY_LIKED);
         }
@@ -33,11 +33,12 @@ public class PostLikeService {
 
         postLikeRepository.save(PostLike.create(post, user));
         post.increaseLikeCount();
+        return post.getLikeCount();
     }
 
     // 좋아요 취소
     @Transactional
-    public void unlike(Long postId, Long userId) {
+    public int unlike(Long postId, Long userId) {
         PostLike postLike = postLikeRepository.findByPostIdAndUserId(postId, userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.LIKE_NOT_FOUND));
 
@@ -46,6 +47,7 @@ public class PostLikeService {
 
         postLikeRepository.delete(postLike);
         post.decreaseLikeCount();  // like_count 감소
+        return post.getLikeCount();
     }
 
     }
