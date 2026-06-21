@@ -2,6 +2,7 @@ package com.example.community.comment.service;
 
 import com.example.community.comment.dto.request.CommentCreateRequest;
 import com.example.community.comment.dto.request.CommentUpdateRequest;
+import com.example.community.comment.dto.response.CommentCursorResponse;
 import com.example.community.comment.dto.response.CommentResponse;
 import com.example.community.comment.model.Comment;
 import com.example.community.comment.repository.CommentRepository;
@@ -13,7 +14,7 @@ import com.example.community.post.repository.PostRepository;
 import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Slice;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,17 +45,18 @@ public class CommentService {
                 profileImageService.getImageUrl(userId)
         );
     }
+
     // 댓글 목록 조회
     @Transactional(readOnly = true)
-    public List<CommentResponse> getComments(Long postId, int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size,
-                Sort.by(Sort.Direction.ASC, "createdAt"));
-        return commentRepository.findAllByPostId(postId, pageRequest).stream()
+    public CommentCursorResponse getComments(Long postId, Long cursor, int size) {
+        Slice<Comment> slice = commentRepository.findAllByPostId(postId, cursor, PageRequest.of(0, size));
+        List<CommentResponse> comments = slice.getContent().stream()
                 .map(comment -> CommentResponse.from(
                         comment,
                         profileImageService.getImageUrl(comment.getUser().getId())
                 ))
                 .collect(Collectors.toList());
+        return new CommentCursorResponse(comments, slice.hasNext());
     }
 
     // 댓글 수정

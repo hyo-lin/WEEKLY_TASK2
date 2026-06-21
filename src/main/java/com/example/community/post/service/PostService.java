@@ -6,6 +6,7 @@ import com.example.community.image.service.PostImageService;
 import com.example.community.image.service.ProfileImageService;
 import com.example.community.post.dto.request.PostCreateRequest;
 import com.example.community.post.dto.request.PostUpdateRequest;
+import com.example.community.post.dto.response.PostCursorResponse;
 import com.example.community.post.dto.response.PostResponse;
 import com.example.community.post.model.Post;
 import com.example.community.post.repository.PostRepository;
@@ -16,7 +17,7 @@ import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Slice;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,17 +38,17 @@ public class PostService {
 
     // 게시글 검색
     @Transactional(readOnly = true)
-    public List<PostResponse> searchPosts(Long userId, String keyword, int page, int size) {
+    public PostCursorResponse searchPosts(Long userId, String keyword, Long cursor, int size) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
-        PageRequest pageRequest = PageRequest.of(page, size,
-                Sort.by(Sort.Direction.DESC, "createdAt"));
-        return postRepository.findByTitleContaining(keyword, pageRequest).stream()
+        Slice<Post> slice = postRepository.findByTitleContaining(keyword, cursor, PageRequest.of(0, size));
+        List<PostResponse> posts = slice.getContent().stream()
                 .map(post -> PostResponse.from(post,
                         post.getViewCount() + viewCountBuffer.get(post.getId()),
                         List.of(),
-                        profileImageService.getImageUrl(post.getUser().getId()),false))
+                        profileImageService.getImageUrl(post.getUser().getId()), false))
                 .collect(Collectors.toList());
+        return new PostCursorResponse(posts, slice.hasNext());
     }
 
     // 게시글 추가
@@ -70,18 +71,17 @@ public class PostService {
 
     // 목록에서는 이미지 미포함
     @Transactional(readOnly = true)
-    public List<PostResponse> getPosts(Long userId, int page, int size) {
+    public PostCursorResponse getPosts(Long userId, Long cursor, int size) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
-        PageRequest pageRequest = PageRequest.of(page, size,
-                Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<Post> posts = postRepository.findAllActive(pageRequest).getContent();
-        return posts.stream()
+        Slice<Post> slice = postRepository.findAllActive(cursor, PageRequest.of(0, size));
+        List<PostResponse> posts = slice.getContent().stream()
                 .map(post -> PostResponse.from(post,
                         post.getViewCount() + viewCountBuffer.get(post.getId()),
                         List.of(),
-                        profileImageService.getImageUrl(post.getUser().getId()),false))
+                        profileImageService.getImageUrl(post.getUser().getId()), false))
                 .collect(Collectors.toList());
+        return new PostCursorResponse(posts, slice.hasNext());
     }
 
 
