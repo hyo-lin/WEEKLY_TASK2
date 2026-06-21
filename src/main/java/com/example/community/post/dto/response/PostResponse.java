@@ -25,6 +25,9 @@ public class PostResponse {
 
     private String nickname;
 
+    @JsonProperty("is_liked")
+    private boolean isLiked;
+
     @JsonProperty("like_count")
     private int likeCount;
 
@@ -43,13 +46,14 @@ public class PostResponse {
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
-    public static PostResponse from(Post post, int viewCount, List<String> imageUrls, String profileImageUrl) {
+    public static PostResponse from(Post post, int viewCount, List<String> imageUrls, String profileImageUrl, boolean isLiked) {
         return new PostResponse(
                 post.getId(),
                 post.getTitle(),
                 post.getContent(),
                 post.getUser().getId(),
                 post.getUser().getNickname(),
+                isLiked,
                 post.getLikeCount(),
                 viewCount,
                 post.getCommentCount(),
