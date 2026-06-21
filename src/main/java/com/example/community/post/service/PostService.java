@@ -46,7 +46,7 @@ public class PostService {
                 .map(post -> PostResponse.from(post,
                         post.getViewCount() + viewCountBuffer.get(post.getId()),
                         List.of(),
-                        profileImageService.getImageUrl(post.getUser().getId())))
+                        profileImageService.getImageUrl(post.getUser().getId()),false))
                 .collect(Collectors.toList());
     }
 
@@ -65,7 +65,7 @@ public class PostService {
 
         List<String> imageUrls = postImageService.getImageUrls(post.getId());
         return PostResponse.from(post, 0, imageUrls,
-                profileImageService.getImageUrl(userId));
+                profileImageService.getImageUrl(userId),false);
     }
 
     // 목록에서는 이미지 미포함
@@ -80,7 +80,7 @@ public class PostService {
                 .map(post -> PostResponse.from(post,
                         post.getViewCount() + viewCountBuffer.get(post.getId()),
                         List.of(),
-                        profileImageService.getImageUrl(post.getUser().getId())))
+                        profileImageService.getImageUrl(post.getUser().getId()),false))
                 .collect(Collectors.toList());
     }
 
@@ -96,8 +96,9 @@ public class PostService {
         eventPublisher.publishEvent(new PostViewedEvent(postId));
 
         List<String> imageUrls = postImageService.getImageUrls(postId);
+        boolean isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
         return PostResponse.from(post, viewCount, imageUrls,
-                profileImageService.getImageUrl(post.getUser().getId()));
+                profileImageService.getImageUrl(post.getUser().getId()),isLiked);
     }
 
     // 게시글 수정
@@ -114,7 +115,7 @@ public class PostService {
 
         List<String> imageUrls = postImageService.getImageUrls(postId);
         return PostResponse.from(post, post.getViewCount(), imageUrls,
-                profileImageService.getImageUrl(post.getUser().getId()));
+                profileImageService.getImageUrl(post.getUser().getId()),false);
     }
 
     // 게시글 삭제
