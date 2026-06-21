@@ -35,9 +35,11 @@ public class CommentController {
     @GetMapping
     public ResponseEntity<CommonResponse<List<CommentResponse>>> getComments(
             @PathVariable Long postId,
-            @RequestAttribute("userId") Long userId
+            @RequestAttribute("userId") Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ){
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_COMMENTS_SUCCESS, commentService.getComments(postId)));
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_COMMENTS_SUCCESS, commentService.getComments(postId, page, size)));
     }
 
     //댓글 수정

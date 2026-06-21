@@ -12,6 +12,8 @@ import com.example.community.post.model.Post;
 import com.example.community.post.repository.PostRepository;
 import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,8 +46,10 @@ public class CommentService {
     }
     // 댓글 목록 조회
     @Transactional(readOnly = true)
-    public List<CommentResponse> getComments(Long postId) {
-        return commentRepository.findAllByPostId(postId).stream()
+    public List<CommentResponse> getComments(Long postId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.ASC, "createdAt"));
+        return commentRepository.findAllByPostId(postId, pageRequest).stream()
                 .map(comment -> CommentResponse.from(
                         comment,
                         profileImageService.getImageUrl(comment.getUser().getId())
