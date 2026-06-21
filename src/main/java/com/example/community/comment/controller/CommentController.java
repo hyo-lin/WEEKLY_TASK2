@@ -2,6 +2,7 @@ package com.example.community.comment.controller;
 
 import com.example.community.comment.dto.request.CommentCreateRequest;
 import com.example.community.comment.dto.request.CommentUpdateRequest;
+import com.example.community.comment.dto.response.CommentCursorResponse;
 import com.example.community.comment.dto.response.CommentResponse;
 import com.example.community.comment.service.CommentService;
 import com.example.community.global.response.CommonResponse;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -31,15 +31,16 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.success(StatusCode.CREATE_COMMENT_SUCCESS, commentService.createComment(postId, userId, request)));
     }
+
     // 댓글 목록 조회
     @GetMapping
-    public ResponseEntity<CommonResponse<List<CommentResponse>>> getComments(
+    public ResponseEntity<CommonResponse<CommentCursorResponse>> getComments(
             @PathVariable Long postId,
             @RequestAttribute("userId") Long userId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size
-    ){
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_COMMENTS_SUCCESS, commentService.getComments(postId, page, size)));
+    ) {
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_COMMENTS_SUCCESS, commentService.getComments(postId, cursor, size)));
     }
 
     //댓글 수정
