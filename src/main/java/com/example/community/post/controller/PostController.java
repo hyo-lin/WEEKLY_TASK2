@@ -4,6 +4,7 @@ import com.example.community.global.response.CommonResponse;
 import com.example.community.global.response.StatusCode;
 import com.example.community.post.dto.request.PostCreateRequest;
 import com.example.community.post.dto.request.PostUpdateRequest;
+import com.example.community.post.dto.response.PostCursorResponse;
 import com.example.community.post.dto.response.PostResponse;
 import com.example.community.post.service.PostService;
 import jakarta.validation.Valid;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,15 +23,15 @@ public class PostController {
 
     // 게시물 검색
     @GetMapping("/search")
-    public ResponseEntity<CommonResponse<List<PostResponse>>> searchPosts(
+    public ResponseEntity<CommonResponse<PostCursorResponse>> searchPosts(
             @RequestAttribute("userId") Long userId,
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(CommonResponse.success(
                 StatusCode.GET_POSTS_SUCCESS,
-                postService.searchPosts(userId, keyword, page, size)));
+                postService.searchPosts(userId, keyword, cursor, size)));
     }
 
     // 게시글 등록
@@ -46,12 +46,12 @@ public class PostController {
 
     // 게시글 목록 조회(댓글 제외)
     @GetMapping
-    public ResponseEntity<CommonResponse<List<PostResponse>>> getPosts(
+    public ResponseEntity<CommonResponse<PostCursorResponse>> getPosts(
             @RequestAttribute("userId") Long userId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POSTS_SUCCESS, postService.getPosts(userId, page, size)));
+        return ResponseEntity.ok(CommonResponse.success(StatusCode.GET_POSTS_SUCCESS, postService.getPosts(userId, cursor, size)));
     }
 
     // 게시물 상세조회
