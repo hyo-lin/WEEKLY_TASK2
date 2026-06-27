@@ -27,8 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/users/email/check",
             "/users/nickname/check",
             "/auth/token",
-            "/images/profile",
-            "/images/20*/**"
+            "/images/presigned-url/profile/temp"
+
     };
 
 
