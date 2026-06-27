@@ -17,6 +17,23 @@ public class ImageController {
 
     private final S3Service s3Service;
 
+    // 회원가입 (인증X)
+    @PostMapping("/presigned-url/profile/temp")
+    public ResponseEntity<CommonResponse<PresignedUrlResponse>> getTempProfilePresignedUrl(
+            @RequestBody PresignedUrlRequest request
+    ) {
+        S3Service.PresignedUrlResponse response = s3Service.generatePresignedUrl(
+                request.extension(),
+                "profile/temp",
+                0L  // 임시 userId
+        );
+        return ResponseEntity.ok(CommonResponse.success(
+                StatusCode.IMAGE_UPLOAD_SUCCESS,
+                new PresignedUrlResponse(response.presignedUrl(), response.s3Url())
+        ));
+    }
+
+    // 게시글 작성/프로필 수정
     @PostMapping("/presigned-url")
     public ResponseEntity<CommonResponse<PresignedUrlResponse>> getPresignedUrl(
             @RequestBody PresignedUrlRequest request,
