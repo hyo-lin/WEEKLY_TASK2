@@ -18,11 +18,7 @@ import java.util.List;
 public class PostImageService {
 
     private final PostImageRepository postImageRepository;
-    private final FileService fileService;
-
-    public String uploadTemp(MultipartFile file) {
-        return fileService.store(file);
-    }
+    private final S3Service s3Service;
 
     public void assignPost(Post post, String imageUrl) {
         postImageRepository.save(PostImage.create(post, imageUrl));
@@ -30,14 +26,17 @@ public class PostImageService {
 
     public void replaceImage(Post post, String imageUrl) {
         postImageRepository.findByPostIdAndDeletedAtIsNull(post.getId())
-                .forEach(existing -> existing.delete());
+                .forEach(existing -> {
+                    s3Service.deleteFile(existing.getImageUrl());  // S3 삭제 추가
+                    existing.delete();
+                });
         postImageRepository.save(PostImage.create(post, imageUrl));
     }
 
     public void softDeleteImages(Long postId) {
         postImageRepository.findByPostIdAndDeletedAtIsNull(postId)
                 .forEach(image -> {
-                    fileService.delete(image.getImageUrl());
+                    s3Service.deleteFile(image.getImageUrl());
                     image.delete();
                 });
     }

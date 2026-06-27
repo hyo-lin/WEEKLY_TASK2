@@ -16,11 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ProfileImageService {
 
     private final ProfileImageRepository profileImageRepository;
-    private final FileService fileService;
-
-    public String uploadTemp(MultipartFile file) {
-        return fileService.store(file);
-    }
+    private final S3Service s3Service;
 
     public void saveImage(User user, String imageUrl) {
         profileImageRepository.save(ProfileImage.create(user, imageUrl));
@@ -30,7 +26,7 @@ public class ProfileImageService {
         ProfileImage image = profileImageRepository
                 .findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.IMAGE_NOT_FOUND));
-        fileService.delete(image.getImageUrl());
+        s3Service.deleteFile(image.getImageUrl());
         image.delete();
     }
 
@@ -51,7 +47,7 @@ public class ProfileImageService {
     public void deleteIfExists(Long userId) {
         profileImageRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .ifPresent(image -> {
-                    fileService.delete(image.getImageUrl());
+                    s3Service.deleteFile(image.getImageUrl());
                     image.delete();
                 });
     }
