@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  be:
+    image: 028210901650.dkr.ecr.ap-northeast-2.amazonaws.com/be-running/ecr:${IMAGE_TAG}
+    container_name: be
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+
+  Portainer:
+    image: portainer/portainer-ce:2.39.0
+    container_name: portainer
+    restart: always
+    profiles: ["with-portainer"]
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+volumes:
+  portainer_data:
