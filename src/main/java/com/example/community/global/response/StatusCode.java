@@ -3,6 +3,8 @@ import org.springframework.http.HttpStatus;
 
 public enum StatusCode {
 
+    HEALTH_CHECK_SUCCESS(HttpStatus.OK,"health_check_success"),
+
     AUTH_CHECK_SUCCESS(HttpStatus.OK, "auth_check_success"),
 
     // --- 회원 관련 성공 ---
