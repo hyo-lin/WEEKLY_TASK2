@@ -10,7 +10,7 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - 'deploy.sh'
-      - '.github/workflows/deploy-be.yml'
+      - '.github/workflows/deploy.yaml'
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
