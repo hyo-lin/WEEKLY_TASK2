@@ -98,6 +98,7 @@ jobs:
 
 
       # BE-c를 먼저 배포. BE-a는 아직 살아있으니 이 동안에도 서비스는 계속됨.
+      # deploy.yaml 파일 내부의 배포 실행 script 부분 수정
       - name: Run deploy.sh on BE-c (container-level Blue-Green)
         run: |
           COMMAND_ID=$(aws ssm send-command \
@@ -105,7 +106,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters commands='[
               "cd /home/ssm-user/WEEKLY_TASK2",
-              "./deploy.sh '${{ env.ECR_URI }}' '${{ needs.continuous-integration.outputs.image_tag }}' '${{ secrets.TG_ARN }}' '${{ secrets.BE_C_INSTANCE_ID }}'"
+              "bash -x ./deploy.sh '${{ env.ECR_URI }}' '${{ needs.continuous-integration.outputs.image_tag }}' '${{ secrets.TG_ARN }}' '${{ secrets.BE_C_INSTANCE_ID }}'"
             ]' \
             --region ${{ env.AWS_REGION }} \
             --query "Command.CommandId" \
