@@ -62,8 +62,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 서버에 이미 clone돼있는 리포지토리에서 최신 코드(docker-compose.yml, deploy.sh 포함)를
-      # git pull로 받아옴. safe.directory 등록은 SSM 실행 주체와 폴더 소유자가 다르게 인식되는 문제 대응
+      # [중요 수정] git stash를 통해 서버에 남은 chmod 흔적을 깔끔히 비우고 pull을 받아옵니다.
       - name: git pull latest code on BE-a & BE-c
         run: |
           for INSTANCE_ID in ${{ secrets.BE_A_INSTANCE_ID }} ${{ secrets.BE_C_INSTANCE_ID }}; do
@@ -73,8 +72,8 @@ jobs:
               --parameters commands='[
                 "git config --global --add safe.directory /home/ssm-user/WEEKLY_TASK2",
                 "cd /home/ssm-user/WEEKLY_TASK2",
-                "git pull origin main",
-                "chmod +x deploy.sh"
+                "git stash",
+                "git pull origin main"
               ]' \
               --region ${{ env.AWS_REGION }} \
               --query "Command.CommandId" \
@@ -98,7 +97,6 @@ jobs:
 
 
       # BE-c를 먼저 배포. BE-a는 아직 살아있으니 이 동안에도 서비스는 계속됨.
-      # deploy.yaml 파일 내부의 배포 실행 script 부분 수정
       - name: Run deploy.sh on BE-c (container-level Blue-Green)
         run: |
           COMMAND_ID=$(aws ssm send-command \
@@ -135,7 +133,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters commands='[
               "cd /home/ssm-user/WEEKLY_TASK2",
-              "./deploy.sh '${{ env.ECR_URI }}' '${{ needs.continuous-integration.outputs.image_tag }}' '${{ secrets.TG_ARN }}' '${{ secrets.BE_A_INSTANCE_ID }}'"
+              "bash -x ./deploy.sh '${{ env.ECR_URI }}' '${{ needs.continuous-integration.outputs.image_tag }}' '${{ secrets.TG_ARN }}' '${{ secrets.BE_A_INSTANCE_ID }}'"
             ]' \
             --region ${{ env.AWS_REGION }} \
             --query "Command.CommandId" \
