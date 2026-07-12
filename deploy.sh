@@ -28,7 +28,7 @@ docker-compose --profile deploying up -d be-green
 echo "===== 2. 내부 헬스체크 (green 부팅 대기 및 검증) ====="
 # 컨테이너가 뜨고 톰캣/스프링이 완전히 켜질 때까지 15초 동안 먼저 기다려줌
 echo "스프링 부트 구동 대기 중 (15초)..."
-sleep 15
+sleep 30
 
 MAX_RETRIES=5
 SUCCESS_COUNT=0
