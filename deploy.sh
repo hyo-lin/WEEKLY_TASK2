@@ -27,7 +27,7 @@ docker-compose --profile deploying up -d be-green
 
 echo "===== 2. 내부 헬스체크 (green, 연속 3회 통과 필요) ====="
 for i in 1 2 3; do
-  if curl -f -s http://localhost:8081/health > /dev/null; then
+  if curl -f -s http://localhost:8081/health/check > /dev/null; then
     echo "내부 헬스체크 $i/3 통과"
     sleep 5
   else
