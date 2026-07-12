@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+# ===== 사용법 =====
 ECR_URI=$1
 IMAGE_TAG=$2
 TG_ARN=$3
@@ -14,13 +15,19 @@ fi
 export ECR_URI
 export IMAGE_TAG
 
+echo "===== 0. ECR 로그인 ====="
+# ec2에서 ecr pull 하기 위한 로그인
+AWS_REGION=$(echo "$ECR_URI" | cut -d. -f4)
+aws ecr get-login-password --region "$AWS_REGION" | \
+  docker login --username AWS --password-stdin "$ECR_URI"
+
 echo "===== 1. green 이미지 pull & 기동 (8081) ====="
 docker-compose --profile deploying pull be-green
 docker-compose --profile deploying up -d be-green
 
 echo "===== 2. 내부 헬스체크 (green, 연속 3회 통과 필요) ====="
 for i in 1 2 3; do
-  if curl -f -s http://localhost:8081/health/check > /dev/null; then
+  if curl -f -s http://localhost:8081/health > /dev/null; then
     echo "내부 헬스체크 $i/3 통과"
     sleep 5
   else
