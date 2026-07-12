@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  be-blue:
+    image: ${ECR_URI}/be-running/ecr:${IMAGE_TAG}
+    container_name: be-blue
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+
+  be-green:
+    image: ${ECR_URI}/be-running/ecr:${IMAGE_TAG}
+    container_name: be-green
+    restart: "no"
+    profiles: ["deploying"]
+    env_file:
+      - .env
+    ports:
+      - "8081:8080"
