@@ -109,5 +109,8 @@ docker stop "be-$ACTIVE" || true
 echo "===== 8. 활성 상태 갱신: $ACTIVE -> $IDLE ====="
 echo "$IDLE" > "$STATE_FILE"
 
+echo "===== 9. 안 쓰는 이미지 정리 ====="
+docker image prune -af
+
 echo "===== 배포 완료 (현재 활성: $IDLE, 포트 $IDLE_PORT) ====="
 docker ps
