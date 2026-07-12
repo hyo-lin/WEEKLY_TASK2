@@ -96,6 +96,7 @@ jobs:
             fi
           done
 
+
       # BE-c를 먼저 배포. BE-a는 아직 살아있으니 이 동안에도 서비스는 계속됨.
       - name: Run deploy.sh on BE-c (container-level Blue-Green)
         run: |
