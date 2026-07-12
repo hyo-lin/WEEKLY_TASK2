@@ -62,7 +62,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # [중요 수정] git stash를 통해 서버에 남은 chmod 흔적을 깔끔히 비우고 pull을 받아옵니다.
+      # sudo -u ssm-user -i 를 통해 폴더의 실제 소유주 신분으로 안전하게 명령어를 실행합니다.
+      # 이로 인해 dubious ownership 및 $HOME 미지정 에러가 완전히 해결됩니다.
       - name: git pull latest code on BE-a & BE-c
         run: |
           for INSTANCE_ID in ${{ secrets.BE_A_INSTANCE_ID }} ${{ secrets.BE_C_INSTANCE_ID }}; do
@@ -70,10 +71,7 @@ jobs:
               --instance-ids "$INSTANCE_ID" \
               --document-name "AWS-RunShellScript" \
               --parameters commands='[
-                "git config --global --add safe.directory /home/ssm-user/WEEKLY_TASK2",
-                "cd /home/ssm-user/WEEKLY_TASK2",
-                "git stash",
-                "git pull origin main"
+                "sudo -u ssm-user -i bash -c \"cd /home/ssm-user/WEEKLY_TASK2 && git stash && git pull origin main\""
               ]' \
               --region ${{ env.AWS_REGION }} \
               --query "Command.CommandId" \
@@ -97,14 +95,14 @@ jobs:
 
 
       # BE-c를 먼저 배포. BE-a는 아직 살아있으니 이 동안에도 서비스는 계속됨.
+      # 스크립트 실행도 ssm-user 권한 컨텍스트 안에서 안전하게 돕니다.
       - name: Run deploy.sh on BE-c (container-level Blue-Green)
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ secrets.BE_C_INSTANCE_ID }} \
             --document-name "AWS-RunShellScript" \
             --parameters commands='[
-              "cd /home/ssm-user/WEEKLY_TASK2",
-              "bash -x ./deploy.sh '${{ env.ECR_URI }}' '${{ needs.continuous-integration.outputs.image_tag }}' '${{ secrets.TG_ARN }}' '${{ secrets.BE_C_INSTANCE_ID }}'"
+              "sudo -u ssm-user -i bash -c \"cd /home/ssm-user/WEEKLY_TASK2 && bash -x ./deploy.sh '"${{ env.ECR_URI }}"' '"${{ needs.continuous-integration.outputs.image_tag }}"' '"${{ secrets.TG_ARN }}"' '"${{ secrets.BE_C_INSTANCE_ID }}"'\""
             ]' \
             --region ${{ env.AWS_REGION }} \
             --query "Command.CommandId" \
@@ -132,8 +130,7 @@ jobs:
             --instance-ids ${{ secrets.BE_A_INSTANCE_ID }} \
             --document-name "AWS-RunShellScript" \
             --parameters commands='[
-              "cd /home/ssm-user/WEEKLY_TASK2",
-              "bash -x ./deploy.sh '${{ env.ECR_URI }}' '${{ needs.continuous-integration.outputs.image_tag }}' '${{ secrets.TG_ARN }}' '${{ secrets.BE_A_INSTANCE_ID }}'"
+              "sudo -u ssm-user -i bash -c \"cd /home/ssm-user/WEEKLY_TASK2 && bash -x ./deploy.sh '"${{ env.ECR_URI }}"' '"${{ needs.continuous-integration.outputs.image_tag }}"' '"${{ secrets.TG_ARN }}"' '"${{ secrets.BE_A_INSTANCE_ID }}"'\""
             ]' \
             --region ${{ env.AWS_REGION }} \
             --query "Command.CommandId" \
