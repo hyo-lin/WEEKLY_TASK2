@@ -1,5 +1,7 @@
 package com.example.community.image.service;
 
+import com.example.community.global.exception.GeneralException;
+import com.example.community.global.response.StatusCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -26,7 +29,13 @@ public class S3Service {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
+
+
     public PresignedUrlResponse generatePresignedUrl(String extension, String folder, Long userId) {
+        if(!ALLOWED_EXTENSIONS.contains(extension))
+            throw new GeneralException(StatusCode.INVALID_IMAGE_EXTENSION);
+
         String key = folder + "/" + userId + "/" + UUID.randomUUID() + "." + extension;
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
