@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/community_test?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: testpass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci1jaS10ZXN0aW5nLW9ubHk=
+  access-token-exp-seconds: 1800
+  refresh-token-exp-seconds: 1209600
+
+scheduler:
+  sync:
+    fixed-delay: 10000
+
+cors:
+  allowed-origins: http://localhost:3000
+
+cloud:
+  aws:
+    s3:
+      bucket: test-bucket
+      presigned-url-expiration: 10
+    region:
+      static: ap-northeast-2
