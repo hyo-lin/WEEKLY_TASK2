@@ -52,6 +52,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew test
+        env:
+          SPRING_PROFILES_ACTIVE: test
 
       # OIDC 기반 AWS 임시 권한 획득 (장기 Access Key 제거)
       - name: Configure AWS credentials
