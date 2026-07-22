@@ -24,11 +24,19 @@ aws ecr get-login-password --region "$AWS_REGION" | \
   docker login --username AWS --password-stdin "$ECR_URI"
 
 echo "===== 1. 현재 활성 상태 확인 ====="
+BLUE_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health/check || true)
+GREEN_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/health/check || true)
+
 # 상태 파일이 없으면 최초 배포로 간주하고 blue를 활성 상태로 초기화
-if [ ! -f "$STATE_FILE" ]; then
-  echo "blue" > "$STATE_FILE"
+if [ "$BLUE_HEALTH" == "200" ]; then
+  ACTIVE="blue"
+elif [ "$GREEN_HEALTH" == "200" ]; then
+  ACTIVE="green"
+elif [ -f "$STATE_FILE" ]; then
+  ACTIVE=$(cat "$STATE_FILE")
+else
+  ACTIVE="blue" # 기본값 초기화
 fi
-ACTIVE=$(cat "$STATE_FILE")
 
 if [ "$ACTIVE" == "blue" ]; then
   IDLE="green"
@@ -39,18 +47,17 @@ else
   ACTIVE_PORT=8081
   IDLE_PORT=8080
 fi
-echo "현재 활성: $ACTIVE ($ACTIVE_PORT) / 이번 배포 대상: $IDLE ($IDLE_PORT)"
+echo "실제 활성 판별 결과: $ACTIVE ($ACTIVE_PORT) / 이번 배포 대상: $IDLE ($IDLE_PORT)"
 
 echo "===== 2. $IDLE 이미지 pull & 기동 ($IDLE_PORT) ====="
 docker-compose pull "be-$IDLE"
 docker-compose up -d "be-$IDLE"
 
 echo "===== 3. 내부 헬스체크 ($IDLE 부팅 대기 및 검증) ====="
-echo "스프링 부트 구동 대기 중 (30초)..."
-sleep 30
 
-MAX_RETRIES=5
+MAX_RETRIES=12
 SUCCESS_COUNT=0
+
 for i in $(seq 1 $MAX_RETRIES); do
   if curl -f -s "http://localhost:$IDLE_PORT/health/check" > /dev/null; then
     SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
@@ -110,7 +117,7 @@ echo "===== 8. 활성 상태 갱신: $ACTIVE -> $IDLE ====="
 echo "$IDLE" > "$STATE_FILE"
 
 echo "===== 9. 안 쓰는 이미지 정리 ====="
-docker image prune -af
+docker image prune -f
 
 echo "===== 배포 완료 (현재 활성: $IDLE, 포트 $IDLE_PORT) ====="
 docker ps
