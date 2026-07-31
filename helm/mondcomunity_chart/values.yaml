@@ -1,0 +1,27 @@
+replicaCount: 2
+
+image:
+  repository: 028210901650.dkr.ecr.ap-northeast-2.amazonaws.com/be-running/ecr
+  tag: a50a6d41f07ebb19260da7790ec018ca1d36e986
+  imagePullSecretName: ecr-secret
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "500m"
+    memory: "768Mi"
+
+probe:
+  path: /health/check
+  port: 8080
+
+config:
+  schedulerTime: "10000"
+  corsAllowedOrigins: "https://mondcommunity.store"
+  awsRegion: "ap-northeast-2"
+  s3BucketName: "running-community-images-028210901650-ap-northeast-2-an"
+  s3PresignedExpiration: "10"
+  jwtAccessExp: "1800"
+  jwtRefreshExp: "1209600"
