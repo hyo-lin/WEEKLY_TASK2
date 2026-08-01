@@ -29,8 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/token",
             "/images/presigned-url/profile/temp",
             "/health/check",
-            "/actuator/prometheus",
-            "/actuator/health"
+            "/actuator/*"
 
     };
 
