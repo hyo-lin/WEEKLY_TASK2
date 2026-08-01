@@ -1,0 +1,19 @@
+apiVersion: v2
+name: mondcomunity_chart
+description: MondCommunity 백엔드 배포용 Helm 차트
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+maintainers:
+  - name: mond
+    email: lin1137001@gmail.com
+
+keywords:
+  - web
+  - application
+  - spring-boot
+
+home: https://github.com/hyo-lin/WEEKLY_TASK2
+sources:
+  - https://github.com/hyo-lin/WEEKLY_TASK2
