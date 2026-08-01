@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki-stack
+    targetRevision: 2.10.2
+    helm:
+      values: |                                      
+        loki:
+          persistence:
+            enabled: true
+            storageClassName: local-path             
+            size: 2Gi
+          nodeSelector:
+            monitoring: "yes"                      
+        promtail:
+          enabled: true
+          nodeSelector:
+            monitoring: "yes"
+          config:
+            clients:
+              - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+            snippets:
+              pipelineStages:
+                - docker: {}
+        grafana:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
