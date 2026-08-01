@@ -10,8 +10,10 @@ spec:
     chart: loki-stack
     targetRevision: 2.10.2
     helm:
-      values: |                                      
-        loki:
+      values: |
+        Loki:
+          image:
+            tag: "2.9.3"
           persistence:
             enabled: true
             storageClassName: local-path             
