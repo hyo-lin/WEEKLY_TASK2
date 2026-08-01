@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mondcommunity-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/hyo-lin/WEEKLY_TASK2.git
+    targetRevision: main
+    path: helm/mondcomunity_chart
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
