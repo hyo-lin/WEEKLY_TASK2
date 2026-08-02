@@ -2,11 +2,15 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-backend
+  namespace: {{ .Release.Namespace | default "backend-ns" }} # 전용 Namespace 지정
   labels:
     app: mondcommunity
     tier: backend
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 5          # 이전 ReplicaSet 보관 개수 명시
+  minReadySeconds: 10              # 신규 Pod 안정화 유지 시간 (10초)
+  progressDeadlineSeconds: 300     # 배포 진행 제한 시간 (5분 내 미완료 시 실패)
   selector:
     matchLabels:
       app: mondcommunity
@@ -22,6 +26,7 @@ spec:
         app: mondcommunity
         tier: backend
     spec:
+      terminationGracePeriodSeconds: 40 # K8s 레벨 종료 유예 시간 (Spring 30초 + 여유 10초)
       imagePullSecrets:
         - name: {{ .Values.image.imagePullSecretName }}
       containers:
@@ -30,6 +35,11 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                # Ingress/Kube-Proxy가 엔드포인트 목록에서 이 Pod를 제거할 시간을 벌어줌
+                command: ["sh", "-c", "sleep 5"]
           envFrom:
             - configMapRef:
                 name: {{ .Release.Name }}-config
@@ -56,22 +66,24 @@ spec:
                   key: JWT_SECRET
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+
+          # 프로브 목적별 엔드포인트 분리
           startupProbe:
             httpGet:
-              path: {{ .Values.probe.path }}
-              port: {{ .Values.probe.port }}
+              path: /actuator/health/liveness
+              port: 8080
             failureThreshold: 20
             periodSeconds: 5
             timeoutSeconds: 3
           readinessProbe:
             httpGet:
-              path: {{ .Values.probe.path }}
-              port: {{ .Values.probe.port }}
+              path: /actuator/health/readiness # DB 장애 시 트래픽만 끊김 (Pod 재시작 X)
+              port: 8080
             periodSeconds: 10
             timeoutSeconds: 3
           livenessProbe:
             httpGet:
-              path: {{ .Values.probe.path }}
-              port: {{ .Values.probe.port }}
+              path: /actuator/health/liveness  # 앱 데드락/다운 시에만 Pod 재시작
+              port: 8080
             periodSeconds: 20
             timeoutSeconds: 3
