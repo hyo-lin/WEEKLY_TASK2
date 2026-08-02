@@ -13,10 +13,6 @@ resources:
     cpu: "500m"
     memory: "768Mi"
 
-probe:
-  path: /health/check
-  port: 8080
-
 config:
   schedulerTime: "10000"
   corsAllowedOrigins: "https://mondcommunity.store"
