@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://grafana.github.io/helm-charts
+    repoURL: https://grafana-community.github.io/helm-charts
     chart: loki
     targetRevision: 6.6.4
     helm:
@@ -16,15 +16,28 @@ spec:
             replication_factor: 1
           storage:
             type: filesystem
+          useTestSchema: true
+
         deploymentMode: SingleBinary
+
+        # --- 캐시 컴포넌트 전면 비활성화 (메모리 절약) ---
+        chunksCache:
+          enabled: false
+        resultsCache:
+          enabled: false
+
         singleBinary:
           replicas: 1
+        read:
+          replicas: 0
+        write:
+          replicas: 0
+        backend:
+          replicas: 0
         test:
           enabled: false
         lokiCanary:
           enabled: false
-        nodeSelector:
-          monitoring: "yes"
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
