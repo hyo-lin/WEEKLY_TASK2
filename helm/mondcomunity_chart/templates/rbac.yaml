@@ -8,7 +8,16 @@ rules:
     resources:
       - pods
       - services
-      - ConfigMaps
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+  # Apps 리소스 (Deployment)
+  - apiGroups: ["apps"]
+    resources:
       - deployments
     verbs:
       - get
