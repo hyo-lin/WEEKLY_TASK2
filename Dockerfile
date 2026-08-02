@@ -6,6 +6,8 @@ WORKDIR /app
 # Gradle 파일 먼저 복사 (레이어 캐싱)
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
+
+RUN chmod +x gradlew
 RUN ./gradlew dependencies --no-daemon
 
 # 소스 코드 복사 후 빌드
