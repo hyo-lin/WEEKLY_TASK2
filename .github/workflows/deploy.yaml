@@ -10,10 +10,11 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - 'deploy.sh'
+      - 'helm/**'                            # Helm 설정 변경 감지 추가
       - '.github/workflows/deploy.yaml'
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 concurrency:
@@ -72,7 +73,7 @@ jobs:
         env:
           SPRING_PROFILES_ACTIVE: test
 
-      # OIDC 기반 AWS 임시 권한 획득 (장기 Access Key 제거)
+      # OIDC 기반 AWS 임시 권한 획득
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -90,9 +91,9 @@ jobs:
             -t ${{ env.ECR_URI }}/${{ env.ECR_REPO }}:${{ steps.vars.outputs.image_tag }} \
             --push .
 
-  # 2. CD 단계: 최신 배포 파일 반영 + BE-a 컨테이너 레벨 Blue-Green 배포
+  # 2. CD 단계 (기존): EC2(BE-a) 대상 컨테이너 레벨 Blue-Green 배포
   continuous-deployment:
-    name: Continuous Deployment (CD)
+    name: Continuous Deployment (EC2 Blue-Green)
     needs: continuous-integration
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +103,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # sudo -u ssm-user -i 를 통해 폴더의 실제 소유주 신분으로 안전하게 명령어를 실행합니다.
       - name: git pull latest code on BE-a
         run: |
           COMMAND_ID=$(aws ssm send-command \
@@ -158,3 +158,27 @@ jobs:
           if [ "$STATUS" != "Success" ]; then
             exit 1
           fi
+
+  # 3. CD 단계 (K8s/ArgoCD용): Helm values.yaml의 이미지 태그를 갱신하고 Git에 커밋 → ArgoCD가 감지해서 자동 배포
+  update-k8s-manifest:
+    name: Update K8s Manifest (ArgoCD Trigger)
+    needs: continuous-integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # helm/mondcomunity_chart/values.yaml 안의 tag: 값만 방금 빌드된 GITHUB_SHA로 교체
+      - name: Update image tag in values.yaml
+        run: |
+          sed -i "s|tag: .*|tag: ${{ needs.continuous-integration.outputs.image_tag }}|" helm/mondcomunity_chart/values.yaml
+
+      # 변경된 values.yaml을 GitHub main 브랜치에 자동 커밋 및 푸시
+      - name: Commit and push updated values.yaml
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/mondcomunity_chart/values.yaml
+          git diff --cached --quiet || git commit -m "chore: update image tag to ${{ needs.continuous-integration.outputs.image_tag }} [skip ci]"
+          git push origin main
