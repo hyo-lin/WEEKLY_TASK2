@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: 028210901650.dkr.ecr.ap-northeast-2.amazonaws.com/be-running/ecr
-  tag: 28bee125324d975b8ce55f0fc951991bbb36b46c
+  tag: 69167c31793f5b27c50f4ac6f9724f4998fc14cb
   imagePullSecretName: ecr-secret
 
 resources:
