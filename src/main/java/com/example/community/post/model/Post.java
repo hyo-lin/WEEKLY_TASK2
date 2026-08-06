@@ -50,8 +50,8 @@ public class Post {
         this.deletedAt = LocalDateTime.now();
     }
 
-    public void increaseViewCount() {
-        this.viewCount++;
+    public void increaseViewCount(int count) {
+        this.viewCount += count;
     }
 
     public void increaseCommentCount() {
