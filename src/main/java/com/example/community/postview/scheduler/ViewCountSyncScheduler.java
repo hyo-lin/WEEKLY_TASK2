@@ -19,12 +19,11 @@ public class ViewCountSyncScheduler {
     @Scheduled(fixedDelayString = "${scheduler.sync.fixed-delay}")
     @Transactional
     public void sync() {
-        if (viewCountBuffer.isEmpty()) return;
-
+       if (viewCountBuffer.isEmpty()) {
+            return;
+        }
         viewCountBuffer.drainAll().forEach((postId, count) -> {
-            postRepository.findById(postId).ifPresent(post -> {
-                    post.increaseViewCount();
-            });
+            postRepository.findById(postId).ifPresent(post -> post.increaseViewCount(count));
         });
     }
 }
