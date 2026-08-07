@@ -14,6 +14,7 @@ resources:
     memory: "768Mi"
 
 config:
+  redisHost: "mondcommunity-redis-svc"
   schedulerTime: "10000"
   corsAllowedOrigins: "https://mondcommunity.store"
   awsRegion: "ap-northeast-2"
