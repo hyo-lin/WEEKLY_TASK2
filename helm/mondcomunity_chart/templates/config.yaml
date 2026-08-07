@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-config
 data:
+  REDIS_HOST: "{{ .Values.config.redisHost }}"
   SCHEDULER_TIME: "{{ .Values.config.schedulerTime }}"
   CORS_ALLOWED_ORIGINS: "{{ .Values.config.corsAllowedOrigins }}"
   AWS_REGION: "{{ .Values.config.awsRegion }}"
