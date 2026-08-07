@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-redis
+  namespace: {{ .Release.Namespace | default "default" }}
+  labels:
+    app: mondcommunity
+    tier: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mondcommunity
+      tier: redis
+  template:
+    metadata:
+      labels:
+        app: mondcommunity
+        tier: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          command: ["redis-server", "--appendonly", "yes"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mondcommunity-redis-svc
+  namespace: {{ .Release.Namespace | default "default" }}
+spec:
+  type: ClusterIP
+  selector:
+    app: mondcommunity
+    tier: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
