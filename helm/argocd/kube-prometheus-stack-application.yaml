@@ -16,6 +16,9 @@ spec:
             nodePort: 30091
             type: NodePort
         prometheus:
+          service:
+            nodePort: 30090
+            type: NodePort
           prometheusSpec:
             storageSpec:
               volumeClaimTemplate:
@@ -26,9 +29,6 @@ spec:
                   resources:
                     requests:
                       storage: 2Gi
-            service:
-              nodePort: 30090
-              type: NodePort
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
