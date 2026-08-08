@@ -8,7 +8,10 @@ import com.example.community.user.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,12 +33,25 @@ public class ProfileImageService {
         image.delete();
     }
 
+    // 단건 조회 - userId 딱 1개
     @Transactional(readOnly = true)
     public String getImageUrl(Long userId) {
         return profileImageRepository
                 .findByUserIdAndDeletedAtIsNull(userId)
                 .map(ProfileImage::getImageUrl)
                 .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, String> getImageUrlsByUserIds(List<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        return profileImageRepository.findAllByUserIdInAndDeletedAtIsNull(userIds).stream()
+                .collect(Collectors.toMap(
+                        image -> image.getUser().getId(),
+                        ProfileImage::getImageUrl
+                ));
     }
 
     public void replaceImage(User user, String imageUrl) {

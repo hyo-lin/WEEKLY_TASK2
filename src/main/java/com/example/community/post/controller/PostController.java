@@ -8,12 +8,13 @@ import com.example.community.post.dto.response.PostCursorResponse;
 import com.example.community.post.dto.response.PostResponse;
 import com.example.community.post.service.PostService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
+@Valid
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/posts")
@@ -25,7 +26,7 @@ public class PostController {
     @GetMapping("/search")
     public ResponseEntity<CommonResponse<PostCursorResponse>> searchPosts(
             @RequestAttribute("userId") Long userId,
-            @RequestParam String keyword,
+            @RequestParam @Size(min = 2, message = "검색어는 2글자 이상 입력해주세요.") String keyword,
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size
     ) {

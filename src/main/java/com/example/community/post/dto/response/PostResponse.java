@@ -46,6 +46,7 @@ public class PostResponse {
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
+    // 엔티티 기반 - createPost, getPosts, getPost, updatePost용
     public static PostResponse from(Post post, int viewCount, List<String> imageUrls, String profileImageUrl, boolean isLiked) {
         return new PostResponse(
                 post.getId(),
@@ -60,6 +61,16 @@ public class PostResponse {
                 profileImageUrl,
                 imageUrls,
                 post.getCreatedAt()
+        );
+    }
+
+    // 검색 결과 기반 - searchPosts용
+    public static PostResponse from(Long postId, String title, Long userId, String nickname,
+                                    boolean isLiked, int likeCount, int viewCount, int commentCount,
+                                    String profileImage, LocalDateTime createdAt) {
+        return new PostResponse(
+                postId, title, null, userId, nickname, isLiked, likeCount,
+                viewCount, commentCount, profileImage, List.of(), createdAt
         );
     }
 }

@@ -4,6 +4,7 @@ import com.example.community.global.exception.GeneralException;
 import com.example.community.global.response.StatusCode;
 import com.example.community.image.service.PostImageService;
 import com.example.community.image.service.ProfileImageService;
+import com.example.community.post.dto.projection.PostSearchProjection;
 import com.example.community.post.dto.request.PostCreateRequest;
 import com.example.community.post.dto.request.PostUpdateRequest;
 import com.example.community.post.dto.response.PostCursorResponse;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,14 +43,33 @@ public class PostService {
     public PostCursorResponse searchPosts(Long userId, String keyword, Long cursor, int size) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
-        Slice<Post> slice = postRepository.findByTitleContaining(keyword, cursor, PageRequest.of(0, size));
-        List<PostResponse> posts = slice.getContent().stream()
-                .map(post -> PostResponse.from(post,
-                        post.getViewCount() + viewCountBuffer.get(post.getId()),
-                        List.of(),
-                        profileImageService.getImageUrl(post.getUser().getId()), false))
+
+        List<PostSearchProjection> fetched = postRepository.searchByFulltext(keyword, cursor, size + 1);
+        boolean hasNext = fetched.size() > size;
+        List<PostSearchProjection> results = hasNext ? fetched.subList(0, size) : fetched;
+
+        // userId만 뽑아서 배치 조회 (N+1 방지, 프로필 이미지 때와 동일 패턴)
+        List<Long> userIds = results.stream()
+                .map(PostSearchProjection::getUserId)
+                .distinct()
                 .collect(Collectors.toList());
-        return new PostCursorResponse(posts, slice.hasNext());
+        Map<Long, String> imageUrlMap = profileImageService.getImageUrlsByUserIds(userIds);
+
+        List<PostResponse> posts = results.stream()
+                .map(p -> PostResponse.from(
+                        p.getPostId(),
+                        p.getTitle(),
+                        p.getUserId(),
+                        p.getNickname(),
+                        false,   // isLiked - 검색에서 좋아요 여부까지 필요하면 postLikeRepository로 배치 조회 추가 필요
+                        p.getLikeCount(),
+                        p.getViewCount() + viewCountBuffer.get(p.getPostId()),
+                        p.getCommentCount(),
+                        imageUrlMap.get(p.getUserId()),
+                        p.getCreatedAt()))
+                .collect(Collectors.toList());
+
+        return new PostCursorResponse(posts, hasNext);
     }
 
     // 게시글 추가
