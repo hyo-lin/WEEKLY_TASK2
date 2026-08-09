@@ -35,14 +35,6 @@
 - Prometheus / Grafana
 - Loki / Promtail
 
-**Frontend**
-- HTML5 / CSS3
-- Node.js / Express
-- express.js
-
-**Infra**
-- AWS S3 + CloudFront 
-- GitHub Actions (CI/CD)
 
 
 ### Front-end
