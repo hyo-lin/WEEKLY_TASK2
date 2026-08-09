@@ -49,7 +49,7 @@
 - <a href="https://github.com/100-hours-a-week/4-mond-community-FE">Front-end Github</a>
 
 ### 서비스 시연 영상
-- <a href="https://drive.google.com/file/d/1r5nhfgSoqopi0j6_GYv-twRqwGcv5qbA/view?pli=1">구글 드라이브</a>
+- https://youtu.be/ElOrnk6t738?si=hC_jWh-UM60Bkh4Y
 
 ### 📁 폴더 구조
 
@@ -205,12 +205,17 @@
 - 문제: 동시에 여러 요청이 몰릴 때 조회수 카운트가 부정확하게 집계
 - 원인: 단순 +1 업데이트 쿼리가 동시성 상황에서 레이스 컨디션 발생
 - 해결: Redis의 원자적 연산(INCR)으로 카운트 처리, post_view 테이블로 유저별 중복 조회 방지
+
+### 검색 기능 성능 이슈
+
+- 문제: 게시글 제목/본문 검색 시 응답 속도 저하, 데이터 증가할수록 심화
+- 원인: LIKE '%keyword%' 방식의 풀 테이블 스캔으로 인덱스 활용 불가
+- 해결: MySQL FULLTEXT 인덱스(ngram parser) 적용으로 인덱스 기반 검색 전환, 한글 형태소 특성상 ngram parser 사용
 <br/>
 
 ## 프로젝트 후기
 프로젝트를 구현하면서 어떻게 설계해야할지를 고민할 수 있었던 프로젝트였다.
 
-## 프로젝트 영상
 
 
 <br/>
