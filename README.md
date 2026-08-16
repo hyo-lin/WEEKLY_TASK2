@@ -191,6 +191,10 @@
 <img src="img.png" width="60%" alt="E-R Diagram" />
 <br/>
 
+
+### 아키텍쳐
+<img width="1771" height="1532" alt="Image" src="https://github.com/user-attachments/assets/c3c81a7a-69a8-443a-92c0-69944657833e" />
+
 ## 트러블 슈팅
 ### 조회수 동시성 처리 이슈
 
