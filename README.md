@@ -218,6 +218,12 @@
 - 문제: 게시글 제목/본문 검색 시 응답 속도 저하, 데이터 증가할수록 심화
 - 원인: LIKE '%keyword%' 방식의 풀 테이블 스캔으로 인덱스 활용 불가
 - 해결: MySQL FULLTEXT 인덱스(ngram parser) 적용으로 인덱스 기반 검색 전환, 한글 형태소 특성상 ngram parser 사용
+
+### VPC Endpoint Interface를 NAT Instance로 변경
+
+- 문제: ECR 접근에 사용하던 VPC Endpoint Interface(ecr.api, ecr.dkr) 비용이 VPC 관련 비용에서 상당 부분을 차지
+- 원인: Interface Endpoint는 AZ당 시간 과금 + 데이터 처리 비용이 별도로 붙는 구조라, 트래픽량 대비 고정비 비중이 컸음. 반면 ECR pull 트래픽은 대량이 아니라 NAT를 경유해도 충분히 감당 가능한 수준이었음
+- 해결: 이미 private subnet의 아웃바운드 트래픽 처리를 위해 NAT Gateway를 대체해 운영 중이던 NAT Instance를 재활용. 별도 NAT Instance를 새로 띄우지 않고, 기존 인스턴스의 보안 그룹에 HTTPS(443) 인바운드 규칙만 추가해 ECR 트래픽도 같은 경로로 나가도록 구성. 이후 VPC Endpoint를 삭제하고, 워커/마스터 노드에서 실제 이미지 pull이 NAT 경유로 정상 동작하는지 curl 및 테스트 파드로 검증
 <br/>
 
 ## 프로젝트 후기
