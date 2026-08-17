@@ -207,23 +207,57 @@
 
 
 ## 트러블 슈팅
+
 ### 조회수 동시성 처리 이슈
 
 - 문제: 동시에 여러 요청이 몰릴 때 조회수 카운트가 부정확하게 집계
 - 원인: 단순 +1 업데이트 쿼리가 동시성 상황에서 레이스 컨디션 발생
-- 해결: Redis의 원자적 연산(INCR)으로 카운트 처리, post_view 테이블로 유저별 중복 조회 방지
+- 고민:
+    - 1차로 로컬 메모리(`ConcurrentHashMap`)로 버퍼링해 스레드 세이프한 원자적 연산은 확보했지만, 서버 재시작/장애 시 아직 flush 안 된 데이터가 유실되는 문제가 남아있었음
+    - 여기에 Backend Pod를 replica 2개로 운영하기 시작하면서 문제가 하나 더 생김: `ConcurrentHashMap`은 JVM(파드)별로 독립된 메모리라, 같은 게시글 조회 요청이 파드1과 파드2에 번갈아 분산되면 조회수가 파드마다 따로 쌓여 집계가 쪼개지는 문제가 발생 (예: postId=33 조회수가 파드1엔 30, 파드2엔 20으로 분리되어 DB flush 시 정합성이 깨짐)
+    - 즉 Redis 도입은 "동시성 자체"보다는 **① 영속성 확보, ② 멀티 파드 환경에서 여러 인스턴스가 공유하는 단일 카운트 저장소 필요**, 이 두 가지가 실질적인 목적
+    - Redis 자료구조 선택: postId마다 별도 키(`view:33`, `view:34`...)를 만드는 방식도 가능했지만, 게시글 수만큼 키가 늘어나는 키 스프롤(key sprawl) 문제와 TTL/메모리 관리가 번거로워짐. 대신 하나의 Hash 키(`view_buffer`) 안에 postId를 필드로 묶어 관리하는 방식을 선택. `HINCRBY`는 하나의 Hash 안에서도 필드 단위로 원자적 증가가 보장되고, 주기적으로 `HGETALL` 한 번으로 전체 버퍼를 배치 조회해 DB에 flush하기도 용이해서 채택
+- 해결: Redis Hash(`HINCRBY`) 기반 원자적 연산으로 카운트 처리, `post_view` 테이블로 유저별 중복 조회 방지
+- 테스트: JMeter 5.6.3로 `GET /posts/{postId}` 대상 50 threads × 100 loops(총 5,000건)를 before(ConcurrentHashMap) / after(Redis) 각 3회 반복 측정
+
+  | 항목 | before (ConcurrentHashMap) | after (Redis HINCRBY) | 차이 |
+    | --- | --- | --- | --- |
+  | Throughput (평균) | 978.5/s | 978.2/s | 거의 동일 (-0.3/s) |
+  | Average 응답시간 | 1.7ms | 1.3ms | 거의 동일 |
+  | Min 응답시간 | 0ms | 1ms | 무시 가능한 차이 |
+  | Error율 | 0% | 0% | 동일 |
+
+    - **결론: 응답시간·처리량 자체에는 유의미한 성능 저하가 없었음.** Redis 도입의 실익은 성능이 아니라, 서버 재시작/장애 시 조회수 유실 방지와 replica 2개 이상 멀티 파드 환경에서의 카운트 정합성 확보에 있음
 
 ### 검색 기능 성능 이슈
 
-- 문제: 게시글 제목/본문 검색 시 응답 속도 저하, 데이터 증가할수록 심화
-- 원인: LIKE '%keyword%' 방식의 풀 테이블 스캔으로 인덱스 활용 불가
-- 해결: MySQL FULLTEXT 인덱스(ngram parser) 적용으로 인덱스 기반 검색 전환, 한글 형태소 특성상 ngram parser 사용
+- 문제: 게시글 제목/본문 검색 시 응답 속도 저하, 데이터 증가할수록 심화. 부가적으로 검색 결과 변환 과정에서 N+1 쿼리 발생
+- 원인:
+    - `LIKE '%keyword%'`처럼 키워드 앞에 `%`가 붙는 패턴은 B-Tree 인덱스를 타지 못해 Full Table Scan 발생
+    - 공백 처리에도 취약해서 "러닝 크루"로 검색 시 "러닝크루 모집"(공백 없음)이 결과에서 누락됨
+    - 검색 결과 각 게시글마다 작성자(`User`) Lazy Loading, 프로필 이미지 URL 조회, 조회수 버퍼 조회가 반복되며 N+1 쿼리 발생
+- 해결:
+    - MySQL FULLTEXT 인덱스(ngram parser) 적용으로 인덱스 기반 검색 전환
+    - `JOIN FETCH p.user`로 작성자 정보를 한 번의 쿼리로 함께 조회해 N+1 제거
+- 테스트: JMeter로 LIKE 검색(before) vs FULLTEXT 검색(after)을 키워드별 400건씩 3회 반복 비교
+
+  | 키워드 | 매치율 | before (LIKE) | after (ngram FULLTEXT) | 결과 |
+    | --- | --- | --- | --- | --- |
+  | "러닝" | 33% (66,558건) | ~8ms | ~704ms | **LIKE가 88배 빠름** |
+  | "안녕" | 0.006% (12건) | ~112ms | ~6.7ms | **FULLTEXT가 17배 빠름** |
+
+    - **결론: FULLTEXT가 무조건 빠른 게 아니라, 매치율(결과 건수)에 따라 유불리가 갈림.** 매치율이 낮은(결과가 희소한) 키워드에서는 FULLTEXT가 압도적으로 유리하지만, 매치율이 높은 키워드는 오히려 인덱스 탐색 오버헤드 + 결과 정렬/스코어링 비용 때문에 LIKE보다 느려짐. 실제 서비스에서는 매치율이 낮은 검색(구체적인 키워드)이 대다수라고 판단해 FULLTEXT를 채택했지만, 이 트레이드오프는 인지하고 있어야 함
 
 ### VPC Endpoint Interface를 NAT Instance로 변경
 
 - 문제: ECR 접근에 사용하던 VPC Endpoint Interface(ecr.api, ecr.dkr) 비용이 VPC 관련 비용에서 상당 부분을 차지
 - 원인: Interface Endpoint는 AZ당 시간 과금 + 데이터 처리 비용이 별도로 붙는 구조라, 트래픽량 대비 고정비 비중이 컸음. 반면 ECR pull 트래픽은 대량이 아니라 NAT를 경유해도 충분히 감당 가능한 수준이었음
-- 해결: 이미 private subnet의 아웃바운드 트래픽 처리를 위해 NAT Gateway를 대체해 운영 중이던 NAT Instance를 재활용. 별도 NAT Instance를 새로 띄우지 않고, 기존 인스턴스의 보안 그룹에 HTTPS(443) 인바운드 규칙만 추가해 ECR 트래픽도 같은 경로로 나가도록 구성. 이후 VPC Endpoint를 삭제하고, 워커/마스터 노드에서 실제 이미지 pull이 NAT 경유로 정상 동작하는지 curl 및 테스트 파드로 검증
+- 고민: NAT Instance를 ECR 전용으로 새로 띄우는 방법도 있었지만, 이미 private subnet 아웃바운드용으로 운영 중이던 NAT Instance가 있어서 굳이 리소스를 중복으로 둘 필요는 없다고 판단. 다만 기존 트래픽에 이미지 pull 트래픽까지 더해지면 대역폭 병목이 생길 수 있어 인스턴스 스펙(t3.micro)으로 감당 가능한지도 함께 고려
+- 해결: 기존 NAT Instance를 재활용. 보안 그룹에 HTTPS(443) 인바운드 규칙 추가(source: 워커 노드 SG)만으로 라우팅 자체는 바로 적용, 이후 VPC Endpoint 삭제
+- 테스트:
+    - `curl -v https://<ecr-uri>` 로 응답 IP가 사설 IP(엔드포인트 경유)가 아닌 NAT의 퍼블릭 IP로 바뀌는지 확인
+    - `kubectl run` 으로 실제 ECR 이미지 pull 테스트 파드 생성 → `Running` 진입까지 확인해 pull 경로 정상 동작 검증
+    - 라우트 테이블의 `0.0.0.0/0` 대상이 NAT Instance ENI로 정상 연결되어 있는지 점검
 <br/>
 
 ## 프로젝트 후기
