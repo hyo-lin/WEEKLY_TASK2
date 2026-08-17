@@ -3,9 +3,9 @@
 ## Back-end 소개
 
 - 러닝 커뮤니티를 주제로 `서로 소통하는 커뮤니티` 프로젝트입니다.
-- `express`로 서버를 구현하고, `MySQL`로 db를 사용했습니다.
-- 개발은 초기 프로젝트 설정부터, db 생성 및 연결, 서버 연결, 프론트엔드 연결까지 구현했습니다.
-- MVC 패턴 기반으로 구현했습니다.
+- `Spring Boot`로 서버를 구현하고, `MySQL`로 db를 사용했습니다.
+- 개발은 초기 프로젝트 설정부터, ERD 설계 및 DB 연결, JWT 인증, REST API 설계, 프론트엔드 연동까지 구현했습니다.
+- 계층형 아키텍처(Controller-Service-Repository) 기반으로 구현했습니다.
 
 ### 개발 인원 및 기간
 
@@ -192,8 +192,19 @@
 <br/>
 
 
-### 아키텍쳐
-<img width="1771" height="1532" alt="Image" src="https://github.com/user-attachments/assets/c3c81a7a-69a8-443a-92c0-69944657833e" />
+### 아키텍처
+<img width="1348" height="1531" alt="Image" src="https://github.com/user-attachments/assets/65d15f1a-841d-457e-91a7-0eca7bf27eff" />
+
+#### 플로우 설명
+
+1. 사용자 → Route53 → CloudFront → S3 (정적 프론트엔드)
+2. 사용자 → Route53 → ALB → NodePort(nginx-ingress) → Backend Pod
+3. Backend Pod → MySQL EC2 (3306)
+4. 브라우저가 Presigned URL로 S3에 직접 업로드 (Gateway Endpoint 경유)
+5. 워커/마스터 → NAT Instance → IGW → ECR 
+6. GitHub Actions(CI) → ECR 이미지 Push
+7. ArgoCD가 클러스터 내부에서 GitHub 레포를 Pull하여 동기화 
+
 
 ## 트러블 슈팅
 ### 조회수 동시성 처리 이슈
