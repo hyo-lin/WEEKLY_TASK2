@@ -255,7 +255,7 @@
 - 원인: Interface Endpoint는 AZ당 시간 과금 + 데이터 처리 비용이 별도로 붙는 구조라, 트래픽량 대비 고정비 비중이 컸음. 반면 ECR pull 트래픽은 대량이 아니라 NAT를 경유해도 충분히 감당 가능한 수준이었음
 - 고민: NAT Instance를 ECR 전용으로 새로 띄우는 방법도 있었지만, 이미 private subnet 아웃바운드용으로 운영 중이던 NAT Instance가 있어서 굳이 리소스를 중복으로 둘 필요는 없다고 판단. 다만 기존 트래픽에 이미지 pull 트래픽까지 더해지면 대역폭 병목이 생길 수 있어 인스턴스 스펙(t3.micro)으로 감당 가능한지도 함께 고려
 - 해결: 기존 NAT Instance를 재활용. 보안 그룹에 HTTPS(443) 인바운드 규칙 추가(source: 워커 노드 SG)만으로 라우팅 자체는 바로 적용, 이후 VPC Endpoint 삭제
-- 결과: 별도 설정 없이 라우팅 즉시 적용 완료 $\rightarrow$ 불필요한 VPC Endpoint 삭제로 일일 고정 비용 $0.62 절감
+- 결과: 별도 설정 없이 라우팅 적용 완료 $\rightarrow$ 불필요한 VPC Endpoint 삭제로 월 고정 비용 $18.6 (약 25,000원) 절감
 - 테스트:
     - `curl -v https://<ecr-uri>` 로 응답 IP가 사설 IP(엔드포인트 경유)가 아닌 NAT의 퍼블릭 IP로 바뀌는지 확인
     - `kubectl run` 으로 실제 ECR 이미지 pull 테스트 파드 생성 → `Running` 진입까지 확인해 pull 경로 정상 동작 검증
