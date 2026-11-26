@@ -47,7 +47,7 @@ abstract class ConcurrencyTestSupport {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
         r.add("spring.datasource.url", () -> "jdbc:mysql://" + MYSQL.getHost() + ":" + MYSQL.getMappedPort(3306)
-                + "/community?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC");
+                + "/community?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true");
         r.add("spring.datasource.username", () -> "root");
         r.add("spring.datasource.password", () -> "test");
         r.add("spring.data.redis.host", REDIS::getHost);
@@ -62,6 +62,36 @@ abstract class ConcurrencyTestSupport {
 
     private static final AtomicInteger SEQ = new AtomicInteger();
 
+    private Boolean statsMode;
+
+    /** post_stats 테이블이 있으면 B 방식(카운터 분리) 코드로 실행 중인 것으로 본다. */
+    protected boolean statsMode() {
+        if (statsMode == null) {
+            statsMode = intQuery("select count(*) from information_schema.tables where table_schema='community' and table_name='post_stats'") > 0;
+            if (statsMode && intQuery("select count(*) from information_schema.table_constraints where table_schema='community' "
+                    + "and table_name='post_stats' and constraint_type='FOREIGN KEY'") == 0) {
+                // 운영 마이그레이션 SQL 과 같은 스키마로 맞춘다 (ddl-auto 는 post_stats → post FK 를 만들지 않음)
+                jdbc.execute("ALTER TABLE post_stats ADD CONSTRAINT fk_post_stats_post FOREIGN KEY (post_id) REFERENCES post (post_id)");
+            }
+        }
+        return statsMode;
+    }
+
+    /** 검색 테스트용 FULLTEXT(ngram) 인덱스. 운영과 같은 방식이며 이미 있으면 건너뛴다. */
+    protected void ensureFulltextIndex() {
+        if (intQuery("select count(*) from information_schema.statistics where table_schema='community' and table_name='post' and index_name='ft_title'") == 0) {
+            jdbc.execute("ALTER TABLE post ADD FULLTEXT INDEX ft_title (title) WITH PARSER ngram");
+        }
+    }
+
+    protected int likeCount(Long postId) {
+        return intQuery(statsMode() ? "select like_count from post_stats where post_id=?" : "select like_count from post where post_id=?", postId);
+    }
+
+    protected int commentCount(Long postId) {
+        return intQuery(statsMode() ? "select comment_count from post_stats where post_id=?" : "select comment_count from post where post_id=?", postId);
+    }
+
     protected List<Long> createUsers(int n) {
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < n; i++) {
@@ -73,10 +103,14 @@ abstract class ConcurrencyTestSupport {
 
     protected Long createPost(Long authorId) {
         User author = userRepository.findById(authorId).orElseThrow();
-        return postRepository.save(Post.create(author, "title", "content")).getId();
+        Long id = postRepository.save(Post.create(author, "title", "content")).getId();
+        if (statsMode()) jdbc.update("insert into post_stats(post_id, like_count, comment_count) values (?, 0, 0)", id);
+        return id;
     }
 
     /** 모든 작업이 latch 에서 동시에 출발하도록 실행하고, 예외 클래스명(성공은 "OK")별 개수를 돌려준다. */
+    protected volatile long lastElapsedMs;
+
     protected Map<String, Integer> runConcurrently(List<Callable<Void>> tasks) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(tasks.size());
         CountDownLatch ready = new CountDownLatch(tasks.size());
@@ -95,9 +129,11 @@ abstract class ConcurrencyTestSupport {
             }));
         }
         ready.await();
+        long t0 = System.nanoTime();
         start.countDown();
         Map<String, Integer> dist = new TreeMap<>();
         for (Future<String> f : futures) dist.merge(f.get(120, TimeUnit.SECONDS), 1, Integer::sum);
+        lastElapsedMs = (System.nanoTime() - t0) / 1_000_000;
         pool.shutdown();
         return dist;
     }

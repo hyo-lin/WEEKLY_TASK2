@@ -5,6 +5,7 @@ import com.example.community.comment.service.CommentService;
 import com.example.community.postlike.service.PostLikeService;
 import com.example.community.postview.buffer.ViewCountBuffer;
 import com.example.community.postview.scheduler.ViewCountSyncScheduler;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,12 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** 수정 전 코드의 동시성 문제를 수치로 기록한다. 판정이 아니라 기록이 목적이므로 assert 는 두지 않는다. */
+/**
+ * 수정 전 코드의 동시성 문제를 수치로 기록한다. 판정이 아니라 기록이 목적이므로 assert 는 두지 않는다.
+ * 02 단계에서 프로덕션 코드를 고쳤으므로 현재 코드에서는 더 이상 "수정 전" 수치를 재현하지 못한다.
+ * 수정 전 수치는 docs/portfolio/01-concurrency-before.md 에 있고, 재현하려면 커밋 b8e568a 에서 실행한다.
+ */
+@Disabled("수정 전 코드 측정용 (커밋 b8e568a 기준). 수정 후 검증은 ConcurrencyAfterTest")
 class ConcurrencyBeforeTest extends ConcurrencyTestSupport {
 
     static final int N = 100;
