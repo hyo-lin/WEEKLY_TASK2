@@ -79,6 +79,55 @@
 
 ## 해석과 다음 단계 제안
 
-- 원인(추정, `SHOW ENGINE INNODB STATUS`로는 아직 확인하지 않음): `post_like`/`comment` insert가 FK 검사로 `post` 행에 공유 락(S)을 잡고, 이어서 `UPDATE post`가 배타 락(X)을 요구한다. 여러 트랜잭션이 S를 쥔 채 서로의 X를 기다리다 데드락이 된다.
+- 원인(2단계에서 확인됨): `post_like`/`comment` insert가 FK 검사로 `post` 행에 공유 락(S)을 잡고, 이어서 `UPDATE post`가 배타 락(X)을 요구한다. 여러 트랜잭션이 S를 쥔 채 서로의 X를 기다리다 데드락이 된다. 아래 캡처 참고.
 - 따라서 개선 전후 지표는 "손실 건수" 하나가 아니라 **성공률(데드락 포함 실패율)과 최종 카운터 정합성** 두 가지로 잡는 것이 맞다. 목표: 100건 → 성공 100, `like_count` = 100, 500 = 0.
 - 재현 방법: `./gradlew test --tests '*ConcurrencyBeforeTest*'` (Docker 필요). 원시 결과는 `build/concurrency-results.jsonl`.
+
+## 데드락 캡처 (`SHOW ENGINE INNODB STATUS` → LATEST DETECTED DEADLOCK)
+
+좋아요 100건 동시 실행 직후(`DeadlockDiagnosisTest`) 캡처. 레코드 hex 덤프는 생략했다.
+
+- (1)(2) 두 트랜잭션 모두 `post` PRIMARY 레코드에 **S 락 보유**(`lock mode S locks rec but not gap`)
+- (1)(2) 두 트랜잭션 모두 같은 레코드의 **X 락 대기**(`lock_mode X locks rec but not gap waiting`)
+- → FK 검사의 공유 락(INSERT) 이후 `UPDATE post`가 배타 락으로 승격하려다 서로 대기하는 **락 승격 데드락**. 가설과 일치.
+- 대기 SQL이 `like_count`뿐 아니라 `comment_count`, `title`, `view_count` 등 **전체 컬럼**을 쓰는 UPDATE인 점은 Hibernate가 `@DynamicUpdate` 없이 전체 컬럼을 갱신하기 때문이다.
+
+```text
+LATEST DETECTED DEADLOCK
+------------------------
+2026-11-26 12:46:27 281473060552448
+*** (1) TRANSACTION:
+TRANSACTION 2373, ACTIVE 0 sec starting index read
+mysql tables in use 1, locked 1
+LOCK WAIT 7 lock struct(s), heap size 1128, 3 row lock(s), undo log entries 1
+MySQL thread id 12, OS thread handle 281473369550592, query id 1340 192.168.65.1 root updating
+/* update for com.example.community.post.model.Post */update post set comment_count=0,content='content',deleted_at=null,like_count=9,title='title',user_id=1,view_count=0 where post_id=1
+
+*** (1) HOLDS THE LOCK(S):
+RECORD LOCKS space id 11 page no 4 n bits 72 index PRIMARY of table `community`.`post` trx id 2373 lock mode S locks rec but not gap
+ 7: SQL NULL;
+
+
+*** (1) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 11 page no 4 n bits 72 index PRIMARY of table `community`.`post` trx id 2373 lock_mode X locks rec but not gap waiting
+ 7: SQL NULL;
+
+
+*** (2) TRANSACTION:
+TRANSACTION 2372, ACTIVE 0 sec starting index read
+mysql tables in use 1, locked 1
+LOCK WAIT 7 lock struct(s), heap size 1128, 3 row lock(s), undo log entries 1
+MySQL thread id 8, OS thread handle 281473374023424, query id 1342 192.168.65.1 root updating
+/* update for com.example.community.post.model.Post */update post set comment_count=0,content='content',deleted_at=null,like_count=9,title='title',user_id=1,view_count=0 where post_id=1
+
+*** (2) HOLDS THE LOCK(S):
+RECORD LOCKS space id 11 page no 4 n bits 72 index PRIMARY of table `community`.`post` trx id 2372 lock mode S locks rec but not gap
+ 7: SQL NULL;
+
+
+*** (2) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 11 page no 4 n bits 72 index PRIMARY of table `community`.`post` trx id 2372 lock_mode X locks rec but not gap waiting
+ 7: SQL NULL;
+
+*** WE ROLL BACK TRANSACTION (2)
+```
