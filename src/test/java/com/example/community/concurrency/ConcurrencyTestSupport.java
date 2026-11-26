@@ -1,17 +1,12 @@
 package com.example.community.concurrency;
 
+import com.example.community.IntegrationTestBase;
 import com.example.community.post.model.Post;
 import com.example.community.post.repository.PostRepository;
 import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,36 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 동시성 "수정 전" 재현용 통합 테스트 기반 클래스. 실제 MySQL 8.0 / Redis 7 컨테이너를 사용한다.
  * 목적은 pass/fail 판정이 아니라 수치 기록이다. 결과는 build/concurrency-results.jsonl 에 누적된다.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-abstract class ConcurrencyTestSupport {
-
-    static final GenericContainer<?> MYSQL = new GenericContainer<>("mysql:8.0")
-            .withEnv("MYSQL_ROOT_PASSWORD", "test")
-            .withEnv("MYSQL_DATABASE", "community")
-            .withExposedPorts(3306)
-            .waitingFor(Wait.forLogMessage(".*ready for connections.*port: 3306.*\\s", 1)
-                    .withStartupTimeout(java.time.Duration.ofMinutes(3)));
-
-    static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7")
-            .withExposedPorts(6379);
-
-    static {
-        MYSQL.start();
-        REDIS.start();
-    }
-
-    @DynamicPropertySource
-    static void props(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", () -> "jdbc:mysql://" + MYSQL.getHost() + ":" + MYSQL.getMappedPort(3306)
-                + "/community?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true");
-        r.add("spring.datasource.username", () -> "root");
-        r.add("spring.datasource.password", () -> "test");
-        r.add("spring.data.redis.host", REDIS::getHost);
-        r.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
-        // 백그라운드 스케줄러가 측정에 끼어들지 않도록 사실상 비활성화 (sync()는 테스트가 직접 호출)
-        r.add("scheduler.sync.fixed-delay", () -> "86400000");
-    }
+abstract class ConcurrencyTestSupport extends IntegrationTestBase {
 
     @Autowired protected UserRepository userRepository;
     @Autowired protected PostRepository postRepository;
