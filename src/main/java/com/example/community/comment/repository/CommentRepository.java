@@ -4,6 +4,7 @@ import com.example.community.comment.model.Comment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,4 +12,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     @Query("SELECT c FROM Comment c WHERE c.post.id = :postId AND (:cursor IS NULL OR c.id > :cursor) ORDER BY c.id ASC")
     Slice<Comment> findAllByPostId(@Param("postId") Long postId, @Param("cursor") Long cursor, Pageable pageable);
+
+    // 실제로 삭제된 행 수를 돌려준다 (같은 댓글을 동시에 삭제해도 카운터는 1번만 감소)
+    @Modifying
+    @Query("DELETE FROM Comment c WHERE c.id = :id")
+    int deleteByIdReturningCount(@Param("id") Long id);
 }

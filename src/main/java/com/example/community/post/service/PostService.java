@@ -11,6 +11,7 @@ import com.example.community.post.dto.response.PostCursorResponse;
 import com.example.community.post.dto.response.PostResponse;
 import com.example.community.post.model.Post;
 import com.example.community.post.repository.PostRepository;
+import com.example.community.post.repository.PostStatsRepository;
 import com.example.community.postlike.repository.PostLikeRepository;
 import com.example.community.postview.buffer.ViewCountBuffer;
 import com.example.community.postview.event.PostViewedEvent;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final PostStatsRepository postStatsRepository;
     private final UserRepository userRepository;
     private final PostImageService postImageService;
     private final ApplicationEventPublisher eventPublisher;
@@ -80,6 +82,7 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
         Post post = postRepository.save(request.toEntity(user));
+        postStatsRepository.create(post.getId());   // 카운터 행 (0, 0)
 
         if (request.getAttachFileUrl() != null) {
             postImageService.assignPost(post, request.getAttachFileUrl());

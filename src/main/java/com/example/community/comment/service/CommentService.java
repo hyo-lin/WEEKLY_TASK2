@@ -9,8 +9,8 @@ import com.example.community.comment.repository.CommentRepository;
 import com.example.community.global.exception.GeneralException;
 import com.example.community.global.response.StatusCode;
 import com.example.community.image.service.ProfileImageService;
-import com.example.community.post.model.Post;
 import com.example.community.post.repository.PostRepository;
+import com.example.community.post.repository.PostStatsRepository;
 import com.example.community.user.model.User;
 import com.example.community.user.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
@@ -28,22 +28,25 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final PostStatsRepository postStatsRepository;
     private final UserRepository userRepository;
     private final ProfileImageService profileImageService;
 
 
+    // 카운터는 post_stats 에 있어 INSERT(post 공유 락)와 카운터 UPDATE(post_stats 배타 락)가 서로 다른 행을 잠근다. (PostLikeService.like 와 동일)
     @Transactional
     public CommentResponse createComment(Long postId, Long userId, CommentCreateRequest request) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new GeneralException(StatusCode.POST_NOT_FOUND));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(StatusCode.USER_NOT_FOUND));
-        Comment comment = Comment.create(post, user, request.getContent());
-        post.increaseCommentCount();
-        return CommentResponse.from(
-                commentRepository.save(comment),
-                profileImageService.getImageUrl(userId)
-        );
+        if (!postRepository.existsByIdAndDeletedAtIsNull(postId)) {
+            throw new GeneralException(StatusCode.POST_NOT_FOUND);
+        }
+        Comment comment = commentRepository.save(
+                Comment.create(postRepository.getReferenceById(postId), user, request.getContent()));
+        if (postStatsRepository.increaseCommentCount(postId) == 0) {
+            throw new IllegalStateException("post_stats 행이 없습니다. postId=" + postId);
+        }
+        return CommentResponse.from(comment, profileImageService.getImageUrl(userId));
     }
 
     // 댓글 목록 조회
@@ -80,8 +83,12 @@ public class CommentService {
         if (!comment.getUser().getId().equals(userId)) {
             throw new GeneralException(StatusCode.FORBIDDEN);
         }
-        comment.getPost().decreaseCommentCount();
-        commentRepository.deleteById(commentId);
+        Long postId = comment.getPost().getId(); // 프록시 id 접근이라 추가 쿼리 없음
+        // 실제로 행이 삭제된 요청만 카운터를 감소시킨다 (같은 댓글 동시 삭제 대비)
+        if (commentRepository.deleteByIdReturningCount(commentId) == 0) {
+            throw new GeneralException(StatusCode.COMMENT_NOT_FOUND);
+        }
+        postStatsRepository.decreaseCommentCount(postId);
     }
 
     private Comment findCommentOrThrow(Long commentId) {
