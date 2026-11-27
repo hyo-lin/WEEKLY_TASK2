@@ -45,8 +45,8 @@ abstract class ConcurrencyTestSupport extends IntegrationTestBase {
 
     /** 검색 테스트용 FULLTEXT(ngram) 인덱스. 운영과 같은 방식이며 이미 있으면 건너뛴다. */
     protected void ensureFulltextIndex() {
-        if (intQuery("select count(*) from information_schema.statistics where table_schema='community' and table_name='post' and index_name='ft_title'") == 0) {
-            jdbc.execute("ALTER TABLE post ADD FULLTEXT INDEX ft_title (title) WITH PARSER ngram");
+        if (intQuery("select count(*) from information_schema.statistics where table_schema='community' and table_name='post' and index_name='idx_post_title_fulltext'") == 0) {
+            jdbc.execute("ALTER TABLE post ADD FULLTEXT INDEX idx_post_title_fulltext (title) WITH PARSER ngram");
         }
     }
 

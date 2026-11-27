@@ -8,14 +8,14 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
- * 통합 테스트 공통 기반. 로컬 MySQL·환경변수 없이 Testcontainers(MySQL 8.0, Redis 7)로 DB 를 띄운다.
+ * 통합 테스트 공통 기반. 로컬 MySQL·환경변수 없이 Testcontainers(MySQL 8.4, Redis 7)로 DB 를 띄운다.
  * 컨테이너는 테스트 JVM 안에서 한 번만 시작해 모든 통합 테스트가 공유하고, 같은 설정이면 Spring 컨텍스트도 캐시된다.
  */
 @SpringBootTest
 @ActiveProfiles("test")
 public abstract class IntegrationTestBase {
 
-    protected static final GenericContainer<?> MYSQL = new GenericContainer<>("mysql:8.0")
+    protected static final GenericContainer<?> MYSQL = new GenericContainer<>("mysql:8.4")
             .withEnv("MYSQL_ROOT_PASSWORD", "test")
             .withEnv("MYSQL_DATABASE", "community")
             .withExposedPorts(3306)
